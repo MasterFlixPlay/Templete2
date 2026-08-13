@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta name="theme-color" content="{{bg_color}}" />
+<title>{{app_name}}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/video.js@8.17.4/dist/video-js.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/video.js@8.17.4/dist/video.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<style>
+:root {
+  --primary-color: {{primary_color}};
+  --bg-app: {{bg_color}};
+  --glass: rgba(255,255,255,0.06);
+  --glass-border: rgba(255,255,255,0.10);
+  --shadow: 0 0 30px rgba(var(--primary-rgb), 0.3);
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif;}
+body{background:var(--bg-app);color:#fff;min-height:100vh;overflow-x:hidden;}
+
+/* TELA DE LOGIN */
+.login-screen{position:fixed;inset:0;z-index:9999;background:var(--bg-app);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+.login-screen .logo{font-size:2rem;font-weight:800;color:var(--primary-color);text-shadow:var(--shadow);margin-bottom:30px;}
+.login-card{width:100%;max-width:380px;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;padding:25px;}
+.login-card input{width:100%;padding:14px;background:rgba(0,0,0,0.4);border:1px solid var(--glass-border);border-radius:12px;color:#fff;margin-bottom:15px;outline:none;transition:0.3s;font-size:15px;}
+.login-card input:focus{border-color:var(--primary-color);}
+.login-card button{width:100%;padding:14px;background:var(--primary-color);border:none;border-radius:12px;color:#fff;font-weight:bold;font-size:1rem;cursor:pointer;transition:0.3s;box-shadow:var(--shadow);}
+.login-card button:hover{transform:translateY(-2px);}
+
+/* APP */
+#app{display:none;}
+.app-header{display:flex;align-items:center;justify-content:space-between;padding:15px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border-bottom:1px solid var(--glass-border);position:sticky;top:0;z-index:50;}
+.app-header h1{font-size:1.2rem;font-weight:800;color:var(--primary-color);text-shadow:0 0 15px rgba(var(--primary-rgb),0.5);}
+
+.bottom-nav{position:fixed;bottom:0;width:100%;background:rgba(0,0,0,0.8);backdrop-filter:blur(20px);border-top:1px solid var(--glass-border);display:flex;justify-content:space-around;padding:8px 0;z-index:100;}
+.bottom-nav button{background:none;border:none;color:rgba(255,255,255,0.4);display:flex;flex-direction:column;align-items:center;font-size:11px;font-weight:600;cursor:pointer;transition:0.3s;}
+.bottom-nav button i{font-size:1.4rem;margin-bottom:4px;}
+.bottom-nav button.active{color:var(--primary-color);text-shadow:0 0 10px rgba(var(--primary-rgb),0.6);}
+
+.view{display:none;padding:15px 15px 100px;}
+.view.active{display:block;}
+
+.hero{position:relative;width:100%;aspect-ratio:16/9;border-radius:20px;overflow:hidden;margin-bottom:20px;background:linear-gradient(135deg,#1a0a28,var(--bg-app));}
+.hero .overlay{position:absolute;bottom:20px;left:20px;font-size:1.5rem;font-weight:800;text-shadow:0 4px 15px rgba(0,0,0,0.9);}
+.hero .overlay span{color:var(--primary-color);}
+
+.shortcuts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:25px;}
+.shortcut{background:var(--glass);border:1px solid var(--glass-border);border-radius:18px;aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:13px;transition:0.3s;cursor:pointer;}
+.shortcut:hover{transform:translateY(-3px);border-color:var(--primary-color);}
+.shortcut i{font-size:1.8rem;color:var(--primary-color);margin-bottom:6px;}
+
+.poster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;}
+.poster{background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;overflow:hidden;transition:0.3s;cursor:pointer;}
+.poster:hover{border-color:var(--primary-color);}
+.poster .img-wrap{aspect-ratio:2/3;background:rgba(0,0,0,0.3);}
+.poster .img-wrap img{width:100%;height:100%;object-fit:cover;}
+.poster .title{padding:10px;font-size:13px;font-weight:600;text-align:center;}
+
+.ch-row{display:flex;align-items:center;gap:12px;padding:12px;background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;margin-bottom:10px;cursor:pointer;transition:0.2s;}
+.ch-row:hover{border-color:var(--primary-color);}
+.ch-row .logo{width:40px;height:40px;border-radius:10px;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ch-row .logo img{max-width:80%;max-height:80%;object-fit:contain;}
+.ch-row .info{flex:1;}
+.ch-row .info .name{font-weight:600;font-size:14px;}
+
+.video-js{width:100%;height:100%;background:#000;}
+.video-js .vjs-big-play-button{background:var(--primary-color);border:none;border-radius:50%;width:65px;height:65px;line-height:65px;margin-left:-32px;margin-top:-32px;box-shadow:var(--shadow);}
+.video-js .vjs-play-progress{background:var(--primary-color);}
+</style>
+</head>
+<body>
+
+<!-- Tela de Login -->
+<div class="login-screen" id="loginScreen">
+    <div class="logo">{{app_name}}</div>
+    <div class="login-card">
+        <input id="inputServer" type="text" placeholder="URL do Servidor" value="{{server_url}}">
+        <input id="inputUser" type="text" placeholder="Usuário" value="{{xtream_user}}">
+        <input id="inputPass" type="password" placeholder="Senha" value="{{xtream_pass}}">
+        <button onclick="doLogin()"><i class="bi bi-box-arrow-in-right me-2"></i>Entrar</button>
+    </div>
+</div>
+
+<!-- Interface do App -->
+<div id="app">
+    <header class="app-header">
+        <div></div>
+        <h1>{{app_name}}</h1>
+        <button class="icon-btn" onclick="location.reload()" style="background:transparent;border:none;color:#fff;font-size:1.2rem;"><i class="bi bi-box-arrow-right"></i></button>
+    </header>
+    <div id="view-home" class="view active"></div>
+    <div id="view-live" class="view"></div>
+    <div id="view-vod" class="view"></div>
+    <div id="view-series" class="view"></div>
+    <nav class="bottom-nav">
+        <button class="nav-item active" data-target="home"><i class="bi bi-house-heart-fill"></i><span>Início</span></button>
+        <button class="nav-item" data-target="live"><i class="bi bi-broadcast"></i><span>Canais</span></button>
+        <button class="nav-item" data-target="vod"><i class="bi bi-film"></i><span>Filmes</span></button>
+        <button class="nav-item" data-target="series"><i class="bi bi-collection-play-fill"></i><span>Séries</span></button>
+    </nav>
+</div>
+
+<div class="modal fade" id="playerModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content" style="background:rgba(0,0,0,0.95);border:1px solid rgba(255,255,255,0.1);">
+      <div class="modal-body p-0">
+        <div style="aspect-ratio:16/9;background:#000;">
+            <video id="videoEl" class="video-js vjs-big-play-centered" controls preload="auto" playsinline></video>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=(s)=>document.querySelector(s);
+const $$=(s)=>[...document.querySelectorAll(s)];
+
+let SERVER, USER, PASS;
+
+function doLogin() {
+    SERVER = document.getElementById('inputServer').value.replace(/\/+$/, '');
+    USER = document.getElementById('inputUser').value;
+    PASS = document.getElementById('inputPass').value;
+
+    if(!SERVER || !USER || !PASS) { alert("Preencha todos os dados!"); return; }
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    mountApp();
+}
+
+const api = {
+    base() { return SERVER + '/player_api.php?username=' + USER + '&password=' + PASS; },
+    async call(action='') {
+        const r = await fetch(api.base() + (action ? '&action='+action : ''));
+        return r.json();
+    },
+    streamLive(id) { return SERVER + '/live/' + USER + '/' + PASS + '/' + id + '.m3u8'; },
+    streamVod(id) { return SERVER + '/movie/' + USER + '/' + PASS + '/' + id + '.mp4'; }
+};
+
+const cache = { live: null, vod: null, series: null };
+
+// Auto login se os dados foram passados pelo gerador
+if(document.getElementById('inputServer').value) doLogin();
+
+function mountApp() {
+    renderHome();
+    $$('.nav-item').forEach(b => {
+        b.addEventListener('click', function() {
+            $$('.nav-item').forEach(n => n.classList.remove('active'));
+            $$('.view').forEach(v => v.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById('view-' + this.dataset.target).classList.add('active');
+            if(this.dataset.target === 'live') renderLive();
+            if(this.dataset.target === 'vod') renderVod();
+            if(this.dataset.target === 'series') renderSeries();
+        });
+    });
+}
+
+function renderHome() {
+    $('#view-home').innerHTML = `
+        <div class="hero">
+            <div class="overlay">Aproveite<br/><span>seu tempo</span> <i class="bi bi-heart-fill" style="color:var(--primary-color)"></i></div>
+        </div>
+        <div class="shortcuts">
+            <div class="shortcut" onclick="navigateTo('live')"><i class="bi bi-broadcast-pin"></i><span>CANAIS</span></div>
+            <div class="shortcut" onclick="navigateTo('vod')"><i class="bi bi-film"></i><span>FILMES</span></div>
+            <div class="shortcut" onclick="navigateTo('series')"><i class="bi bi-play-btn-fill"></i><span>SÉRIES</span></div>
+        </div>
+        <div class="poster-grid">
+            <div class="poster"><div class="img-wrap" style="background:#1a1a2e"></div><div class="title">Em breve</div></div>
+        </div>
+    `;
+}
+
+async function renderLive() {
+    const el = document.getElementById('view-live');
+    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando canais...</p>';
+    if(!cache.live) cache.live = await api.call('get_live_streams');
+    if(!cache.live || !cache.live.length) {
+        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum canal encontrado.</p>';
+        return;
+    }
+    let html = '';
+    cache.live.slice(0, 50).forEach(s => {
+        html += `
+            <div class="ch-row" onclick="playLive('${s.stream_id}', '${s.name}')">
+                <div class="logo">${s.stream_icon ? `<img src="${s.stream_icon}" />` : '<i class="bi bi-tv" style="color:var(--primary-color)"></i>'}</div>
+                <div class="info"><div class="name">${s.name}</div></div>
+            </div>
+        `;
+    });
+    el.innerHTML = html;
+}
+
+async function renderVod() {
+    const el = document.getElementById('view-vod');
+    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando filmes...</p>';
+    if(!cache.vod) cache.vod = await api.call('get_vod_streams');
+    if(!cache.vod || !cache.vod.length) {
+        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum filme encontrado.</p>';
+        return;
+    }
+    let html = '<div class="poster-grid">';
+    cache.vod.slice(0, 30).forEach(s => {
+        html += `
+            <div class="poster" onclick="playVod('${s.stream_id}', '${s.name}')">
+                <div class="img-wrap">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div>
+                <div class="title">${s.name}</div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    el.innerHTML = html;
+}
+
+async function renderSeries() {
+    const el = document.getElementById('view-series');
+    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando séries...</p>';
+    if(!cache.series) cache.series = await api.call('get_series');
+    if(!cache.series || !cache.series.length) {
+        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhuma série encontrada.</p>';
+        return;
+    }
+    let html = '<div class="poster-grid">';
+    cache.series.slice(0, 30).forEach(s => {
+        html += `
+            <div class="poster">
+                <div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div>
+                <div class="title">${s.name}</div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    el.innerHTML = html;
+}
+
+let player = null;
+window.playLive = (id, name) => { play(api.streamLive(id), name); };
+window.playVod = (id, name) => { play(api.streamVod(id), name); };
+window.navigateTo = (target) => {
+    const btn = document.querySelector(`.nav-item[data-target="${target}"]`);
+    if(btn) btn.click();
+};
+
+function play(url, title) {
+    if(player) { player.dispose(); player = null; }
+    new bootstrap.Modal('#playerModal').show();
+    setTimeout(() => {
+        player = videojs('videoEl', { controls: true, autoplay: true, fluid: true });
+        player.src({ src: url, type: 'application/x-mpegURL' });
+    }, 300);
+}
+</script>
+</body>
+</html>
