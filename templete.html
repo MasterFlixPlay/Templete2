@@ -8,6 +8,8 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/video.js@8.17.4/dist/video-js.min.css" />
+<!-- BIBLIOTECA HLS ADICIONADA (RESOLVE O PROBLEMA DO PLAYER NÃO CARREGAR) -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/video.js@8.17.4/dist/video.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <style>
@@ -130,7 +132,6 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 
 <div id="app">
     <div id="menu-container"></div>
-    
     <div id="view-home" class="view active"></div>
     <div id="view-live" class="view"></div>
     <div id="view-vod" class="view"></div>
@@ -164,6 +165,23 @@ let videoPlayer = null;
 const favorites = JSON.parse(localStorage.getItem('favs') || '[]');
 const cache = { live: null, vod: null, series: null, userInfo: null };
 let isLoadingHome = false;
+
+/* NOVO BOTÃO SAIR: volta para a tela de login sem recarregar a página */
+function performLogout() {
+    if(confirm('Deseja realmente sair?')) {
+        localStorage.clear(); // Limpa favoritos e dados
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('splash-screen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+        // Limpa os campos de login
+        document.getElementById('inputServer').value = '';
+        document.getElementById('inputUser').value = '';
+        document.getElementById('inputPass').value = '';
+        // Limpa o cache para forçar recarregamento na próxima vez
+        cache.live = null; cache.vod = null; cache.series = null;
+        if(videoPlayer) { videoPlayer.dispose(); videoPlayer = null; }
+    }
+}
 
 function doLogin() {
     SERVER = document.getElementById('inputServer').value.replace(/\/+$/, '');
@@ -232,10 +250,9 @@ function mountApp() {
     document.body.classList.add(CARD_STYLE === 'fluido' ? 'card-fluido' : 'card-padrao');
     document.getElementById('videoEl').classList.add(PLAYER_STYLE === 'fluido' ? 'vjs-fluido' : 'vjs-padrao');
 
-    // Carrega a Home primeiro
-    renderHome();
+    // Carrega os dados assim que o app inicia
+    loadHomeData();
     
-    // Prepara as outras abas
     $$('.nav-item').forEach(b => {
         b.addEventListener('click', function() {
             $$('.nav-item').forEach(n => n.classList.remove('active'));
@@ -253,9 +270,9 @@ function mountApp() {
 }
 
 /* =========================================================
-   TELA INICIAL (CARREGANDO TODOS OS DADOS)
+   FUNÇÃO QUE CARREGA OS DADOS E MONTA A TELA INICIAL
    ========================================================= */
-async function renderHome() {
+async function loadHomeData() {
     const homeDiv = document.getElementById('view-home');
     homeDiv.innerHTML = `
         <div class="hero">
@@ -270,7 +287,7 @@ async function renderHome() {
 
     if(!isLoadingHome) {
         isLoadingHome = true;
-        // Carrega todos os dados em paralelo para a Tela Inicial
+        // Carrega todos os dados em paralelo
         try {
             const [liveData, vodData, seriesData] = await Promise.all([
                 !cache.live ? api.call('get_live_streams') : cache.live,
@@ -278,18 +295,17 @@ async function renderHome() {
                 !cache.series ? api.call('get_series') : cache.series
             ]);
 
-            // Atualiza o cache
             if(!cache.live) cache.live = liveData || [];
             if(!cache.vod) cache.vod = vodData || [];
             if(!cache.series) cache.series = seriesData || [];
 
-            // Verifica se os dados existem
             const hasLive = cache.live && cache.live.length > 0;
             const hasVod = cache.vod && cache.vod.length > 0;
             const hasSeries = cache.series && cache.series.length > 0;
 
             let html = '';
 
+            // CANAIS EM DESTAQUE
             if(hasLive) {
                 html += `<div class="section-head"><h5 style="font-weight:600;color:var(--primary-color);margin:20px 0 10px;">📡 Canais em destaque</h5></div><div class="h-scroll">`;
                 cache.live.slice(0, 10).forEach(s => {
@@ -303,6 +319,7 @@ async function renderHome() {
                 html += `</div>`;
             }
 
+            // FILMES POPULARES
             if(hasVod) {
                 html += `<div class="section-head"><h5 style="font-weight:600;color:var(--primary-color);margin:20px 0 10px;">🎬 Filmes populares</h5></div><div class="h-scroll">`;
                 cache.vod.slice(0, 10).forEach(s => {
@@ -316,6 +333,7 @@ async function renderHome() {
                 html += `</div>`;
             }
 
+            // SÉRIES RECENTES
             if(hasSeries) {
                 html += `<div class="section-head"><h5 style="font-weight:600;color:var(--primary-color);margin:20px 0 10px;">📺 Séries recentes</h5></div><div class="h-scroll">`;
                 cache.series.slice(0, 10).forEach(s => {
@@ -470,7 +488,6 @@ async function renderInfo() {
     }
     const info = cache.userInfo.user_info || { username: USER, exp_date: 0 };
     
-    // CORREÇÃO DA DATA DE VALIDADE
     let expDate = '--/--/----';
     if(info.exp_date && info.exp_date > 0) {
         const dateObj = new Date(info.exp_date * 1000);
@@ -484,7 +501,8 @@ async function renderInfo() {
             <p><strong>Expiração:</strong> ${expDate}</p>
             <p><strong>Servidor:</strong> ${SERVER}</p>
         </div>
-        <button onclick="if(confirm('Deseja realmente sair?')){ localStorage.clear(); location.reload(); }" style="width:100%;padding:14px;background:#dc3545;border:none;border-radius:12px;color:#fff;font-weight:bold;font-size:1rem;cursor:pointer;">
+        <!-- BOTÃO SAIR CORRIGIDO -->
+        <button onclick="performLogout()" style="width:100%;padding:14px;background:#dc3545;border:none;border-radius:12px;color:#fff;font-weight:bold;font-size:1rem;cursor:pointer;">
             <i class="bi bi-box-arrow-right me-2"></i>Sair da Conta
         </button>
     `;
