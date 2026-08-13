@@ -12,7 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <style>
 /* =========================================================
-   BASE DO SISTEMA (Nunca muda, aplicado em todos os modelos)
+   BASE DO SISTEMA (Nunca muda)
    ========================================================= */
 :root {
   --primary-color: {{primary_color}};
@@ -42,52 +42,66 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
 /* APP */
-#app{display:none;padding-bottom:80px;}
+#app{display:none;}
 
 /* =========================================================
-   ESTILO DE MENU (Escolha do Gerador)
+   ESTILOS DE MENU (O Gerador apaga o que não for usado)
    ========================================================= */
-{{menu_style_start}}
-/* MODELO 1: MENU BAIXO (Padrão) */
+{{MENU_STYLES}}
+{{MENU_START_1}}
 .bottom-nav.baixo{position:fixed;bottom:0;width:100%;background:rgba(0,0,0,0.8);backdrop-filter:blur(20px);border-top:1px solid var(--glass-border);display:flex;justify-content:space-around;padding:10px 0;z-index:100;}
-.bottom-nav.baixo button{background:none;border:none;color:rgba(255,255,255,0.4);display:flex;flex-direction:column;align-items:center;font-size:11px;font-weight:600;cursor:pointer;transition:0.3s;}
+.bottom-nav.baixo button{background:none;border:none;color:rgba(255,255,255,0.4);display:flex;flex-direction:column;align-items:center;font-size:11px;font-weight:600;cursor:pointer;transition:0.3s;padding:5px;}
+.bottom-nav.baixo button i{font-size:1.4rem;margin-bottom:2px;}
 .bottom-nav.baixo button.active{color:var(--primary-color);}
+{{MENU_END_1}}
 
-/* MODELO 2: MENU LATERAL (Esquerdo) */
-.bottom-nav.lateral{position:fixed;left:0;top:0;width:80px;height:100vh;background:rgba(0,0,0,0.9);backdrop-filter:blur(20px);border-right:1px solid var(--glass-border);display:flex;flex-direction:column;justify-content:center;gap:30px;padding:20px 0;z-index:100;}
+{{MENU_START_2}}
+.bottom-nav.lateral{position:fixed;left:0;top:0;width:85px;height:100vh;background:rgba(0,0,0,0.9);backdrop-filter:blur(20px);border-right:1px solid var(--glass-border);display:flex;flex-direction:column;justify-content:center;gap:25px;padding:20px 0;z-index:100;}
 .bottom-nav.lateral button{background:none;border:none;color:rgba(255,255,255,0.4);display:flex;flex-direction:column;align-items:center;font-size:11px;font-weight:600;cursor:pointer;transition:0.3s;padding:10px 0;}
+.bottom-nav.lateral button i{font-size:1.5rem;margin-bottom:3px;}
 .bottom-nav.lateral button.active{color:var(--primary-color);}
+{{MENU_END_2}}
 
-/* MODELO 3: MENU ALTO (Topo) */
+{{MENU_START_3}}
 .app-header.alto{background:rgba(0,0,0,0.8);backdrop-filter:blur(20px);border-bottom:1px solid var(--glass-border);display:flex;justify-content:space-around;padding:10px;z-index:100;position:sticky;top:0;}
-.app-header.alto button{background:none;border:none;color:rgba(255,255,255,0.4);display:flex;flex-direction:column;align-items:center;font-size:11px;font-weight:600;cursor:pointer;transition:0.3s;}
+.app-header.alto button{background:none;border:none;color:rgba(255,255,255,0.4);display:flex;flex-direction:column;align-items:center;font-size:11px;font-weight:600;cursor:pointer;transition:0.3s;padding:5px;}
+.app-header.alto button i{font-size:1.4rem;margin-bottom:2px;}
 .app-header.alto button.active{color:var(--primary-color);}
-{{menu_style_end}}
+{{MENU_END_3}}
 
 /* =========================================================
-   ESTILO DE CARD E PLAYER (Escolha do Gerador)
+   ESTILOS DE CARD E PLAYER (O Gerador apaga o que não for usado)
    ========================================================= */
-{{card_style_start}}
-/* MODELO A: CARDS QUADRADOS E PLAYER PADRÃO */
-.card-padrao .ch-row{padding:12px;background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;display:flex;align-items:center;gap:12px;margin-bottom:10px;cursor:pointer;}
-.card-padrao .poster{background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;overflow:hidden;}
+{{CARD_STYLES}}
+{{CARD_START_1}}
+.card-padrao .ch-row{padding:12px;background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;display:flex;align-items:center;gap:12px;margin-bottom:10px;cursor:pointer;transition:0.2s;}
+.card-padrao .ch-row:hover{border-color:var(--primary-color);}
+.card-padrao .poster{background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;overflow:hidden;transition:0.2s;}
+.card-padrao .poster:hover{border-color:var(--primary-color);}
 .vjs-padrao .vjs-big-play-button{background:var(--primary-color);border-radius:50%;width:65px;height:65px;line-height:65px;margin-left:-32px;margin-top:-32px;}
+{{CARD_END_1}}
 
-/* MODELO B: CARDS ARREDONDADOS E PLAYER FLUTUANTE */
-.card-fluido .ch-row{background:var(--glass);border-radius:30px;padding:10px 20px;box-shadow:var(--shadow);}
-.card-fluido .poster{border-radius:30px;box-shadow:var(--shadow);}
-.vjs-fluido .vjs-big-play-button{background:var(--primary-color);border-radius:20px;width:80px;height:60px;line-height:60px;margin-left:-40px;margin-top:-30px;}
-{{card_style_end}}
+{{CARD_START_2}}
+.card-fluido .ch-row{background:var(--glass);border-radius:20px;padding:12px 18px;border:1px solid var(--glass-border);box-shadow:0 4px 15px rgba(0,0,0,0.2);margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:0.2s;}
+.card-fluido .ch-row:hover{transform:translateY(-2px);}
+.card-fluido .poster{border-radius:20px;overflow:hidden;border:1px solid var(--glass-border);transition:0.2s;}
+.card-fluido .poster:hover{transform:scale(1.02);}
+.vjs-fluido .vjs-big-play-button{background:var(--primary-color);border-radius:16px;width:75px;height:55px;line-height:55px;margin-left:-37px;margin-top:-27px;}
+{{CARD_END_2}}
 
+/* ESTRUTURA DAS VIEWS */
 .view{display:none;padding:15px;}
 .view.active{display:block;}
 .hero{position:relative;width:100%;aspect-ratio:16/9;border-radius:20px;overflow:hidden;margin-bottom:20px;background:linear-gradient(135deg,#1a0a28,var(--bg-app));}
 .hero .overlay{position:absolute;bottom:20px;left:20px;font-size:1.5rem;font-weight:800;}
 .hero .overlay span{color:var(--primary-color);}
-
-/* Abas específicas */
-#view-info{display:none;padding:15px;}
-#view-info.active{display:block;}
+.ch-logo{width:40px;height:40px;border-radius:10px;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ch-logo img{max-width:80%;max-height:80%;object-fit:contain;}
+.ch-info{flex:1;}.ch-info .ch-name{font-weight:600;font-size:14px;}
+.poster .img-wrap{aspect-ratio:2/3;background:rgba(0,0,0,0.3);}
+.poster .img-wrap img{width:100%;height:100%;object-fit:cover;}
+.poster .title{padding:10px;font-size:13px;font-weight:600;text-align:center;}
+.poster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;}
 </style>
 </head>
 <body>
@@ -110,10 +124,8 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 </div>
 
 <div id="app">
-    <!-- MENU & HEADER (Injetado dinamicamente conforme a escolha) -->
     <div id="menu-container"></div>
-
-    <!-- VIEWS -->
+    
     <div id="view-home" class="view active"></div>
     <div id="view-live" class="view"></div>
     <div id="view-vod" class="view"></div>
@@ -138,12 +150,15 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 const $=(s)=>document.querySelector(s);
 const $$=(s)=>[...document.querySelectorAll(s)];
 
-/* CONFIGURAÇÕES DO GERADOR */
-const MENU_STYLE = "{{menu_choice}}"; // baixo, lateral, alto
-const CARD_STYLE = "{{card_choice}}"; // padrao, fluido
-const PLAYER_STYLE = "{{player_choice}}"; // padrao, fluido
+// INJEÇÃO DAS ESCOLHAS DO GERADOR
+const MENU_STYLE = "{{menu_choice}}";
+const CARD_STYLE = "{{card_choice}}";
+const PLAYER_STYLE = "{{player_choice}}";
 
 let SERVER, USER, PASS;
+let videoPlayer = null;
+const favorites = JSON.parse(localStorage.getItem('favs') || '[]');
+const cache = { live: null, vod: null, series: null, userInfo: null };
 
 function doLogin() {
     SERVER = document.getElementById('inputServer').value.replace(/\/+$/, '');
@@ -152,12 +167,14 @@ function doLogin() {
 
     if(!SERVER || !USER || !PASS) { alert("Preencha todos os dados!"); return; }
     document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('splash-screen').classList.remove('hide');
     
     setTimeout(() => {
         document.getElementById('splash-screen').classList.add('hide');
         document.getElementById('app').style.display = 'block';
-        mountApp();
+        setTimeout(() => {
+            document.getElementById('splash-screen').style.display = 'none';
+            mountApp();
+        }, 500);
     }, 1500);
 }
 
@@ -171,72 +188,63 @@ const api = {
     streamVod(id) { return SERVER + '/movie/' + USER + '/' + PASS + '/' + id + '.mp4'; }
 };
 
-const cache = { live: null, vod: null, series: null, userInfo: null };
-
 if(document.getElementById('inputServer').value) doLogin();
 
 function mountApp() {
-    // Define o menu
+    // Define o Menu Escolhido
     let menuHTML = '';
     if(MENU_STYLE === 'baixo') {
-        menuHTML = `
-            <nav class="bottom-nav baixo">
-                <button class="nav-item active" data-target="home"><i class="bi bi-house-heart-fill"></i><span>Início</span></button>
-                <button class="nav-item" data-target="live"><i class="bi bi-broadcast"></i><span>Canais</span></button>
-                <button class="nav-item" data-target="vod"><i class="bi bi-film"></i><span>Filmes</span></button>
-                <button class="nav-item" data-target="series"><i class="bi bi-collection-play-fill"></i><span>Séries</span></button>
-                <button class="nav-item" data-target="favorites"><i class="bi bi-heart-fill"></i><span>Favs</span></button>
-                <button class="nav-item" data-target="info"><i class="bi bi-info-circle-fill"></i><span>Info</span></button>
-            </nav>
-        `;
+        menuHTML = `<nav class="bottom-nav baixo">
+            <button class="nav-item active" data-target="home"><i class="bi bi-house-heart-fill"></i><span>Início</span></button>
+            <button class="nav-item" data-target="live"><i class="bi bi-broadcast"></i><span>Canais</span></button>
+            <button class="nav-item" data-target="vod"><i class="bi bi-film"></i><span>Filmes</span></button>
+            <button class="nav-item" data-target="series"><i class="bi bi-collection-play-fill"></i><span>Séries</span></button>
+            <button class="nav-item" data-target="favorites"><i class="bi bi-heart-fill"></i><span>Favs</span></button>
+            <button class="nav-item" data-target="info"><i class="bi bi-info-circle-fill"></i><span>Info</span></button>
+        </nav>`;
     } else if(MENU_STYLE === 'lateral') {
-        menuHTML = `
-            <nav class="bottom-nav lateral">
-                <button class="nav-item active" data-target="home"><i class="bi bi-house-heart-fill"></i><span>Início</span></button>
-                <button class="nav-item" data-target="live"><i class="bi bi-broadcast"></i><span>Canais</span></button>
-                <button class="nav-item" data-target="vod"><i class="bi bi-film"></i><span>Filmes</span></button>
-                <button class="nav-item" data-target="series"><i class="bi bi-collection-play-fill"></i><span>Séries</span></button>
-                <button class="nav-item" data-target="favorites"><i class="bi bi-heart-fill"></i><span>Favs</span></button>
-                <button class="nav-item" data-target="info"><i class="bi bi-info-circle-fill"></i><span>Info</span></button>
-            </nav>
-        `;
+        menuHTML = `<nav class="bottom-nav lateral">
+            <button class="nav-item active" data-target="home"><i class="bi bi-house-heart-fill"></i><span>Início</span></button>
+            <button class="nav-item" data-target="live"><i class="bi bi-broadcast"></i><span>Canais</span></button>
+            <button class="nav-item" data-target="vod"><i class="bi bi-film"></i><span>Filmes</span></button>
+            <button class="nav-item" data-target="series"><i class="bi bi-collection-play-fill"></i><span>Séries</span></button>
+            <button class="nav-item" data-target="favorites"><i class="bi bi-heart-fill"></i><span>Favs</span></button>
+            <button class="nav-item" data-target="info"><i class="bi bi-info-circle-fill"></i><span>Info</span></button>
+        </nav>`;
     } else if(MENU_STYLE === 'alto') {
-        menuHTML = `
-            <header class="app-header alto">
-                <h1 style="color:var(--primary-color);margin:0;">{{app_name}}</h1>
-                <div style="display:flex;gap:10px;">
-                    <button class="nav-item active" data-target="home">Início</button>
-                    <button class="nav-item" data-target="live">Canais</button>
-                    <button class="nav-item" data-target="vod">Filmes</button>
-                    <button class="nav-item" data-target="series">Séries</button>
-                    <button class="nav-item" data-target="info">Info</button>
-                </div>
-            </header>
-        `;
+        menuHTML = `<header class="app-header alto">
+            <div style="color:var(--primary-color);font-weight:bold;font-size:1.2rem;">{{app_name}}</div>
+            <div style="display:flex;gap:10px;">
+                <button class="nav-item active" data-target="home">Início</button>
+                <button class="nav-item" data-target="live">Canais</button>
+                <button class="nav-item" data-target="vod">Filmes</button>
+                <button class="nav-item" data-target="series">Séries</button>
+                <button class="nav-item" data-target="info">Info</button>
+            </div>
+        </header>`;
     }
     document.getElementById('menu-container').innerHTML = menuHTML;
 
-    // Define o estilo dos Cards e Player
+    // Aplica Estilo de Cards e Player
     document.body.classList.add(CARD_STYLE === 'fluido' ? 'card-fluido' : 'card-padrao');
     document.getElementById('videoEl').classList.add(PLAYER_STYLE === 'fluido' ? 'vjs-fluido' : 'vjs-padrao');
 
-    // Inicializa lógica
     renderHome();
     $$('.nav-item').forEach(b => {
         b.addEventListener('click', function() {
             $$('.nav-item').forEach(n => n.classList.remove('active'));
             $$('.view').forEach(v => v.classList.remove('active'));
             this.classList.add('active');
-            document.getElementById('view-' + this.dataset.target).classList.add('active');
-            if(this.dataset.target === 'live') renderLive();
-            if(this.dataset.target === 'vod') renderVod();
-            if(this.dataset.target === 'series') renderSeries();
-            if(this.dataset.target === 'info') renderInfo();
+            const target = this.dataset.target;
+            document.getElementById('view-' + target).classList.add('active');
+            if(target === 'live') renderLive();
+            if(target === 'vod') renderVod();
+            if(target === 'series') renderSeries();
+            if(target === 'favorites') renderFavorites();
+            if(target === 'info') renderInfo();
         });
     });
 }
-
-/* ================= RENDERIZAÇÃO ================= */
 
 function renderHome() {
     $('#view-home').innerHTML = `
@@ -244,11 +252,11 @@ function renderHome() {
             <div class="overlay">Aproveite<br/><span>seu tempo</span></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div style="background:var(--glass);padding:20px;border-radius:14px;text-align:center;cursor:pointer;" onclick="navigateTo('live')">
-                <i class="bi bi-broadcast" style="font-size:2rem;color:var(--primary-color);"></i><br>Canais
+            <div style="background:var(--glass);padding:20px;border-radius:14px;text-align:center;cursor:pointer;transition:0.2s;border:1px solid var(--glass-border);" onclick="navigateTo('live')">
+                <i class="bi bi-broadcast" style="font-size:2rem;color:var(--primary-color);"></i><br><span style="font-weight:600;">Canais</span>
             </div>
-            <div style="background:var(--glass);padding:20px;border-radius:14px;text-align:center;cursor:pointer;" onclick="navigateTo('vod')">
-                <i class="bi bi-film" style="font-size:2rem;color:var(--primary-color);"></i><br>Filmes
+            <div style="background:var(--glass);padding:20px;border-radius:14px;text-align:center;cursor:pointer;transition:0.2s;border:1px solid var(--glass-border);" onclick="navigateTo('vod')">
+                <i class="bi bi-film" style="font-size:2rem;color:var(--primary-color);"></i><br><span style="font-weight:600;">Filmes</span>
             </div>
         </div>
     `;
@@ -259,15 +267,22 @@ async function renderLive() {
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando canais...</p>';
     if(!cache.live) cache.live = await api.call('get_live_streams');
     if(!cache.live || !cache.live.length) {
-        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum canal encontrado.</p>';
+        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum canal.</p>';
         return;
     }
     let html = '';
     cache.live.slice(0, 50).forEach(s => {
+        const fav = favorites.find(f => f.id === s.stream_id && f.type === 'live');
         html += `
-            <div class="ch-row" onclick="playLive('${s.stream_id}', '${s.name}')">
-                <div class="ch-logo">${s.stream_icon ? `<img src="${s.stream_icon}" />` : '<i class="bi bi-tv"></i>'}</div>
+            <div class="ch-row">
+                <div class="ch-logo">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div>
                 <div class="ch-info"><div class="ch-name">${s.name}</div></div>
+                <button onclick="toggleFav('live', '${s.stream_id}', '${s.name}', '${s.stream_icon || ''}'); event.stopPropagation();" style="background:transparent;border:none;color:${fav ? 'var(--primary-color)' : 'rgba(255,255,255,0.3)'};font-size:1.2rem;cursor:pointer;">
+                    <i class="bi bi-heart-fill"></i>
+                </button>
+                <button onclick="playLive('${s.stream_id}', '${s.name}'); event.stopPropagation();" style="background:var(--primary-color);border:none;border-radius:50%;width:35px;height:35px;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                    <i class="bi bi-play-fill"></i>
+                </button>
             </div>
         `;
     });
@@ -279,10 +294,10 @@ async function renderVod() {
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando filmes...</p>';
     if(!cache.vod) cache.vod = await api.call('get_vod_streams');
     if(!cache.vod || !cache.vod.length) {
-        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum filme encontrado.</p>';
+        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum filme.</p>';
         return;
     }
-    let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;">';
+    let html = '<div class="poster-grid">';
     cache.vod.slice(0, 30).forEach(s => {
         html += `
             <div class="poster" onclick="playVod('${s.stream_id}', '${s.name}')">
@@ -300,10 +315,10 @@ async function renderSeries() {
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando séries...</p>';
     if(!cache.series) cache.series = await api.call('get_series');
     if(!cache.series || !cache.series.length) {
-        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhuma série encontrada.</p>';
+        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhuma série.</p>';
         return;
     }
-    let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;">';
+    let html = '<div class="poster-grid">';
     cache.series.slice(0, 30).forEach(s => {
         html += `
             <div class="poster">
@@ -316,36 +331,68 @@ async function renderSeries() {
     el.innerHTML = html;
 }
 
-async function renderInfo() {
-    if(!cache.userInfo) {
-        try { cache.userInfo = await api.call(); } catch(e) { cache.userInfo = { user_info: { username: USER, exp_date: 0 } }; }
+function renderFavorites() {
+    const el = document.getElementById('view-favorites');
+    if(!favorites.length) {
+        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum favorito adicionado.</p>';
+        return;
     }
-    const info = cache.userInfo.user_info || { username: USER, exp_date: 0 };
+    let html = '<div class="poster-grid">';
+    favorites.forEach(s => {
+        html += `
+            <div class="poster" onclick="playFav('${s.id}', '${s.name}', '${s.type}')">
+                <div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div>
+                <div class="title">${s.name}</div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    el.innerHTML = html;
+}
+
+function renderInfo() {
+    if(!cache.userInfo) {
+        try { cache.userInfo = api.call(); } catch(e) {}
+    }
+    const info = cache.userInfo?.user_info || { username: USER, exp_date: 0 };
+    const expDate = info.exp_date ? new Date(info.exp_date * 1000).toLocaleDateString() : '--/--/----';
     document.getElementById('view-info').innerHTML = `
-        <h3 style="color:var(--primary-color);">Informações da Conta</h3>
-        <div style="background:var(--glass);padding:15px;border-radius:14px;margin-top:15px;">
-            <p><strong>Usuário:</strong> ${info.username}</p>
-            <p><strong>Expiração:</strong> ${new Date(info.exp_date * 1000).toLocaleDateString()}</p>
+        <h3 style="color:var(--primary-color);margin-bottom:15px;">Informações da Conta</h3>
+        <div style="background:var(--glass);padding:15px;border-radius:14px;border:1px solid var(--glass-border);">
+            <p><strong>Usuário:</strong> ${info.username || USER}</p>
+            <p><strong>Expiração:</strong> ${expDate}</p>
             <p><strong>Servidor:</strong> ${SERVER}</p>
         </div>
     `;
 }
 
-/* ================= PLAYER ================= */
-let player = null;
-window.playLive = (id, name) => { play(api.streamLive(id), name); };
-window.playVod = (id, name) => { play(api.streamVod(id), name); };
+// Lógica de Favoritos
+function toggleFav(type, id, name, cover) {
+    const idx = favorites.findIndex(f => f.id === id && f.type === type);
+    if(idx > -1) { favorites.splice(idx, 1); } 
+    else { favorites.push({ type, id, name, cover }); }
+    localStorage.setItem('favs', JSON.stringify(favorites));
+    if(document.getElementById('view-live').classList.contains('active')) renderLive();
+}
+
+// Navegação e Player
+window.playLive = (id, name) => play(api.streamLive(id), name);
+window.playVod = (id, name) => play(api.streamVod(id), name);
+window.playFav = (id, name, type) => {
+    if(type === 'live') play(api.streamLive(id), name);
+    if(type === 'vod') play(api.streamVod(id), name);
+};
 window.navigateTo = (target) => {
     const btn = document.querySelector(`.nav-item[data-target="${target}"]`);
     if(btn) btn.click();
 };
 
 function play(url, title) {
-    if(player) { player.dispose(); player = null; }
+    if(videoPlayer) { videoPlayer.dispose(); videoPlayer = null; }
     new bootstrap.Modal('#playerModal').show();
     setTimeout(() => {
-        player = videojs('videoEl', { controls: true, autoplay: true, fluid: true });
-        player.src({ src: url, type: 'application/x-mpegURL' });
+        videoPlayer = videojs('videoEl', { controls: true, autoplay: true, fluid: true });
+        videoPlayer.src({ src: url, type: 'application/x-mpegURL' });
     }, 300);
 }
 </script>
