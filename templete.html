@@ -13,34 +13,35 @@
 <style>
 :root {
   --primary-color: {{primary_color}};
+  --primary-rgb: {{primary_rgb}};
   --bg-app: {{bg_color}};
   --glass: rgba(255,255,255,0.06);
   --glass-border: rgba(255,255,255,0.10);
-  --shadow: 0 0 30px rgba(var(--primary-rgb), 0.3);
+  --shadow: 0 0 30px rgba({{primary_rgb}}, 0.3);
 }
 *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif;}
-body{background:var(--bg-app);color:#fff;min-height:100vh;overflow-x:hidden;}
+body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 
-/* TELA DE LOGIN */
+/* ================= TELA DE LOGIN ================= */
 .login-screen{position:fixed;inset:0;z-index:9999;background:var(--bg-app);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
-.login-screen .logo{font-size:2rem;font-weight:800;color:var(--primary-color);text-shadow:var(--shadow);margin-bottom:30px;}
+.login-screen .logo{font-size:2.2rem;font-weight:800;color:var(--primary-color);text-shadow:var(--shadow);margin-bottom:30px;}
 .login-card{width:100%;max-width:380px;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;padding:25px;}
-.login-card input{width:100%;padding:14px;background:rgba(0,0,0,0.4);border:1px solid var(--glass-border);border-radius:12px;color:#fff;margin-bottom:15px;outline:none;transition:0.3s;font-size:15px;}
+.login-card input{width:100%;padding:14px;background:rgba(0,0,0,0.4);border:1px solid var(--glass-border);border-radius:12px;color:#fff;margin-bottom:12px;outline:none;transition:0.3s;font-size:15px;}
 .login-card input:focus{border-color:var(--primary-color);}
 .login-card button{width:100%;padding:14px;background:var(--primary-color);border:none;border-radius:12px;color:#fff;font-weight:bold;font-size:1rem;cursor:pointer;transition:0.3s;box-shadow:var(--shadow);}
 .login-card button:hover{transform:translateY(-2px);}
 
-/* APP */
-#app{display:none;}
+/* ================= APP ================= */
+#app{display:none;padding-bottom:80px;}
 .app-header{display:flex;align-items:center;justify-content:space-between;padding:15px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border-bottom:1px solid var(--glass-border);position:sticky;top:0;z-index:50;}
-.app-header h1{font-size:1.2rem;font-weight:800;color:var(--primary-color);text-shadow:0 0 15px rgba(var(--primary-rgb),0.5);}
+.app-header h1{font-size:1.2rem;font-weight:800;color:var(--primary-color);text-shadow:0 0 15px rgba({{primary_rgb}},0.5);}
 
-.bottom-nav{position:fixed;bottom:0;width:100%;background:rgba(0,0,0,0.8);backdrop-filter:blur(20px);border-top:1px solid var(--glass-border);display:flex;justify-content:space-around;padding:8px 0;z-index:100;}
+.bottom-nav{position:fixed;bottom:0;width:100%;background:rgba(0,0,0,0.8);backdrop-filter:blur(20px);border-top:1px solid var(--glass-border);display:flex;justify-content:space-around;padding:10px 0;z-index:100;}
 .bottom-nav button{background:none;border:none;color:rgba(255,255,255,0.4);display:flex;flex-direction:column;align-items:center;font-size:11px;font-weight:600;cursor:pointer;transition:0.3s;}
 .bottom-nav button i{font-size:1.4rem;margin-bottom:4px;}
-.bottom-nav button.active{color:var(--primary-color);text-shadow:0 0 10px rgba(var(--primary-rgb),0.6);}
+.bottom-nav button.active{color:var(--primary-color);text-shadow:0 0 10px rgba({{primary_rgb}},0.6);}
 
-.view{display:none;padding:15px 15px 100px;}
+.view{display:none;padding:15px 15px 20px;}
 .view.active{display:block;}
 
 .hero{position:relative;width:100%;aspect-ratio:16/9;border-radius:20px;overflow:hidden;margin-bottom:20px;background:linear-gradient(135deg,#1a0a28,var(--bg-app));}
@@ -49,7 +50,7 @@ body{background:var(--bg-app);color:#fff;min-height:100vh;overflow-x:hidden;}
 
 .shortcuts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:25px;}
 .shortcut{background:var(--glass);border:1px solid var(--glass-border);border-radius:18px;aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:13px;transition:0.3s;cursor:pointer;}
-.shortcut:hover{transform:translateY(-3px);border-color:var(--primary-color);}
+.shortcut:hover{transform:translateY(-3px);border-color:var(--primary-color);box-shadow:var(--shadow);}
 .shortcut i{font-size:1.8rem;color:var(--primary-color);margin-bottom:6px;}
 
 .poster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;}
@@ -69,27 +70,26 @@ body{background:var(--bg-app);color:#fff;min-height:100vh;overflow-x:hidden;}
 .video-js{width:100%;height:100%;background:#000;}
 .video-js .vjs-big-play-button{background:var(--primary-color);border:none;border-radius:50%;width:65px;height:65px;line-height:65px;margin-left:-32px;margin-top:-32px;box-shadow:var(--shadow);}
 .video-js .vjs-play-progress{background:var(--primary-color);}
+.modal-content{background:rgba(0,0,0,0.95);border:1px solid var(--glass-border);}
 </style>
 </head>
 <body>
 
-<!-- Tela de Login -->
 <div class="login-screen" id="loginScreen">
     <div class="logo">{{app_name}}</div>
     <div class="login-card">
         <input id="inputServer" type="text" placeholder="URL do Servidor" value="{{server_url}}">
         <input id="inputUser" type="text" placeholder="Usuário" value="{{xtream_user}}">
         <input id="inputPass" type="password" placeholder="Senha" value="{{xtream_pass}}">
-        <button onclick="doLogin()"><i class="bi bi-box-arrow-in-right me-2"></i>Entrar</button>
+        <button onclick="doLogin()"><i class="bi bi-box-arrow-in-right me-2"></i>Conectar</button>
     </div>
 </div>
 
-<!-- Interface do App -->
 <div id="app">
     <header class="app-header">
         <div></div>
         <h1>{{app_name}}</h1>
-        <button class="icon-btn" onclick="location.reload()" style="background:transparent;border:none;color:#fff;font-size:1.2rem;"><i class="bi bi-box-arrow-right"></i></button>
+        <button style="background:transparent;border:none;color:#fff;font-size:1.2rem;cursor:pointer;" onclick="location.reload()"><i class="bi bi-box-arrow-right"></i></button>
     </header>
     <div id="view-home" class="view active"></div>
     <div id="view-live" class="view"></div>
@@ -105,7 +105,7 @@ body{background:var(--bg-app);color:#fff;min-height:100vh;overflow-x:hidden;}
 
 <div class="modal fade" id="playerModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-xl">
-    <div class="modal-content" style="background:rgba(0,0,0,0.95);border:1px solid rgba(255,255,255,0.1);">
+    <div class="modal-content">
       <div class="modal-body p-0">
         <div style="aspect-ratio:16/9;background:#000;">
             <video id="videoEl" class="video-js vjs-big-play-centered" controls preload="auto" playsinline></video>
@@ -144,7 +144,6 @@ const api = {
 
 const cache = { live: null, vod: null, series: null };
 
-// Auto login se os dados foram passados pelo gerador
 if(document.getElementById('inputServer').value) doLogin();
 
 function mountApp() {
@@ -173,14 +172,14 @@ function renderHome() {
             <div class="shortcut" onclick="navigateTo('series')"><i class="bi bi-play-btn-fill"></i><span>SÉRIES</span></div>
         </div>
         <div class="poster-grid">
-            <div class="poster"><div class="img-wrap" style="background:#1a1a2e"></div><div class="title">Em breve</div></div>
+            <div class="poster"><div class="img-wrap" style="background:#1a1a2e"></div><div class="title">Explore</div></div>
         </div>
     `;
 }
 
 async function renderLive() {
     const el = document.getElementById('view-live');
-    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando canais...</p>';
+    el.innerHTML = '<p style="padding:20px;text-align:center;opacity:0.7;"><i class="bi bi-arrow-repeat me-2"></i>Carregando...</p>';
     if(!cache.live) cache.live = await api.call('get_live_streams');
     if(!cache.live || !cache.live.length) {
         el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum canal encontrado.</p>';
@@ -200,7 +199,7 @@ async function renderLive() {
 
 async function renderVod() {
     const el = document.getElementById('view-vod');
-    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando filmes...</p>';
+    el.innerHTML = '<p style="padding:20px;text-align:center;opacity:0.7;"><i class="bi bi-arrow-repeat me-2"></i>Carregando...</p>';
     if(!cache.vod) cache.vod = await api.call('get_vod_streams');
     if(!cache.vod || !cache.vod.length) {
         el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum filme encontrado.</p>';
@@ -221,7 +220,7 @@ async function renderVod() {
 
 async function renderSeries() {
     const el = document.getElementById('view-series');
-    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando séries...</p>';
+    el.innerHTML = '<p style="padding:20px;text-align:center;opacity:0.7;"><i class="bi bi-arrow-repeat me-2"></i>Carregando...</p>';
     if(!cache.series) cache.series = await api.call('get_series');
     if(!cache.series || !cache.series.length) {
         el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhuma série encontrada.</p>';
