@@ -93,15 +93,20 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 .view{display:none;padding:15px;padding-bottom:80px;}
 .view.active{display:block;}
 .hero{position:relative;width:100%;aspect-ratio:16/9;border-radius:20px;overflow:hidden;margin-bottom:20px;background:linear-gradient(135deg,#1a0a28,var(--bg-app));}
-.hero .overlay{position:absolute;bottom:20px;left:20px;font-size:1.5rem;font-weight:800;}
+.hero .overlay{position:absolute;bottom:20px;left:20px;font-size:1.5rem;font-weight:800;text-shadow:0 2px 10px rgba(0,0,0,0.5);}
 .hero .overlay span{color:var(--primary-color);}
 .ch-logo{width:40px;height:40px;border-radius:10px;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .ch-logo img{max-width:80%;max-height:80%;object-fit:contain;}
 .ch-info{flex:1;}.ch-info .ch-name{font-weight:600;font-size:14px;}
-.poster .img-wrap{aspect-ratio:2/3;background:rgba(0,0,0,0.3);}
+.poster .img-wrap{aspect-ratio:2/3;background:rgba(0,0,0,0.3);border-radius:14px;overflow:hidden;}
 .poster .img-wrap img{width:100%;height:100%;object-fit:cover;}
 .poster .title{padding:10px;font-size:13px;font-weight:600;text-align:center;}
 .poster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;}
+
+/* SCROLL HORIZONTAL PARA A HOME */
+.h-scroll{display:flex;gap:12px;overflow-x:auto;padding-bottom:5px;scroll-snap-type:x mandatory;}
+.h-scroll::-webkit-scrollbar{display:none;}
+.h-scroll .poster{flex:0 0 auto;width:120px;scroll-snap-align:start;}
 </style>
 </head>
 <body>
@@ -158,6 +163,7 @@ let SERVER, USER, PASS;
 let videoPlayer = null;
 const favorites = JSON.parse(localStorage.getItem('favs') || '[]');
 const cache = { live: null, vod: null, series: null, userInfo: null };
+let isLoadingHome = false;
 
 function doLogin() {
     SERVER = document.getElementById('inputServer').value.replace(/\/+$/, '');
@@ -226,7 +232,10 @@ function mountApp() {
     document.body.classList.add(CARD_STYLE === 'fluido' ? 'card-fluido' : 'card-padrao');
     document.getElementById('videoEl').classList.add(PLAYER_STYLE === 'fluido' ? 'vjs-fluido' : 'vjs-padrao');
 
+    // Carrega a Home primeiro
     renderHome();
+    
+    // Prepara as outras abas
     $$('.nav-item').forEach(b => {
         b.addEventListener('click', function() {
             $$('.nav-item').forEach(n => n.classList.remove('active'));
@@ -244,37 +253,94 @@ function mountApp() {
 }
 
 /* =========================================================
-   TELA INICIAL (REFORMULADA E COM MAIS ESTILO)
+   TELA INICIAL (CARREGANDO TODOS OS DADOS)
    ========================================================= */
-function renderHome() {
-    $('#view-home').innerHTML = `
+async function renderHome() {
+    const homeDiv = document.getElementById('view-home');
+    homeDiv.innerHTML = `
         <div class="hero">
             <div class="overlay">Aproveite<br/><span>seu tempo</span></div>
         </div>
-        
-        <h5 style="font-weight:600;color:var(--primary-color);margin-bottom:15px;">Descubra</h5>
-        
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div style="background:var(--glass);padding:25px 10px;border-radius:18px;text-align:center;cursor:pointer;transition:0.2s;border:1px solid var(--glass-border);" onclick="navigateTo('live')" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='var(--glass-border)'">
-                <div style="background:rgba(255,255,255,0.05);width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">
-                    <i class="bi bi-broadcast" style="font-size:1.8rem;color:var(--primary-color);"></i>
-                </div>
-                <span style="font-weight:600;">Canais</span>
+        <div id="homeContent">
+            <div style="text-align:center;padding:20px;opacity:0.7;">
+                <i class="bi bi-arrow-repeat me-2"></i>Carregando sua biblioteca...
             </div>
-            
-            <div style="background:var(--glass);padding:25px 10px;border-radius:18px;text-align:center;cursor:pointer;transition:0.2s;border:1px solid var(--glass-border);" onclick="navigateTo('vod')" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='var(--glass-border)'">
-                <div style="background:rgba(255,255,255,0.05);width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">
-                    <i class="bi bi-film" style="font-size:1.8rem;color:var(--primary-color);"></i>
-                </div>
-                <span style="font-weight:600;">Filmes</span>
-            </div>
-        </div>
-        
-        <div style="margin-top:20px;background:var(--glass);border-radius:14px;padding:15px;border:1px solid var(--glass-border);">
-            <h6 style="font-weight:600;color:var(--primary-color);">Bem-vindo de volta!</h6>
-            <p style="font-size:13px;opacity:0.7;margin-bottom:0;">Navegue pelo menu inferior para acessar todo o conteúdo.</p>
         </div>
     `;
+
+    if(!isLoadingHome) {
+        isLoadingHome = true;
+        // Carrega todos os dados em paralelo para a Tela Inicial
+        try {
+            const [liveData, vodData, seriesData] = await Promise.all([
+                !cache.live ? api.call('get_live_streams') : cache.live,
+                !cache.vod ? api.call('get_vod_streams') : cache.vod,
+                !cache.series ? api.call('get_series') : cache.series
+            ]);
+
+            // Atualiza o cache
+            if(!cache.live) cache.live = liveData || [];
+            if(!cache.vod) cache.vod = vodData || [];
+            if(!cache.series) cache.series = seriesData || [];
+
+            // Verifica se os dados existem
+            const hasLive = cache.live && cache.live.length > 0;
+            const hasVod = cache.vod && cache.vod.length > 0;
+            const hasSeries = cache.series && cache.series.length > 0;
+
+            let html = '';
+
+            if(hasLive) {
+                html += `<div class="section-head"><h5 style="font-weight:600;color:var(--primary-color);margin:20px 0 10px;">📡 Canais em destaque</h5></div><div class="h-scroll">`;
+                cache.live.slice(0, 10).forEach(s => {
+                    html += `
+                        <div class="poster" onclick="playLive('${s.stream_id}', '${s.name}')">
+                            <div class="img-wrap" style="aspect-ratio:16/9;">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div>
+                            <div class="title">${s.name}</div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            if(hasVod) {
+                html += `<div class="section-head"><h5 style="font-weight:600;color:var(--primary-color);margin:20px 0 10px;">🎬 Filmes populares</h5></div><div class="h-scroll">`;
+                cache.vod.slice(0, 10).forEach(s => {
+                    html += `
+                        <div class="poster" onclick="playVod('${s.stream_id}', '${s.name}')">
+                            <div class="img-wrap">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div>
+                            <div class="title">${s.name}</div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            if(hasSeries) {
+                html += `<div class="section-head"><h5 style="font-weight:600;color:var(--primary-color);margin:20px 0 10px;">📺 Séries recentes</h5></div><div class="h-scroll">`;
+                cache.series.slice(0, 10).forEach(s => {
+                    html += `
+                        <div class="poster">
+                            <div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div>
+                            <div class="title">${s.name}</div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            if(!hasLive && !hasVod && !hasSeries) {
+                html += `<p style="text-align:center;padding:40px;opacity:0.6;">Nenhum conteúdo encontrado no servidor.</p>`;
+            }
+
+            document.getElementById('homeContent').innerHTML = html;
+
+        } catch(e) {
+            document.getElementById('homeContent').innerHTML = `<p style="text-align:center;padding:30px;opacity:0.6;color:#ff6b6b;">Erro ao carregar dados. Verifique suas credenciais.</p>`;
+        } finally {
+            isLoadingHome = false;
+        }
+    }
 }
 
 /* =========================================================
@@ -282,8 +348,17 @@ function renderHome() {
    ========================================================= */
 async function renderLive() {
     const el = document.getElementById('view-live');
+    if(cache.live) return renderLiveList(el);
+    
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando canais...</p>';
-    if(!cache.live) cache.live = await api.call('get_live_streams');
+    try {
+        cache.live = await api.call('get_live_streams') || [];
+        renderLiveList(el);
+    } catch(e) {
+        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Erro ao carregar canais.</p>';
+    }
+}
+function renderLiveList(el) {
     if(!cache.live || !cache.live.length) {
         el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum canal.</p>';
         return;
@@ -309,8 +384,17 @@ async function renderLive() {
 
 async function renderVod() {
     const el = document.getElementById('view-vod');
+    if(cache.vod) return renderVodList(el);
+
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando filmes...</p>';
-    if(!cache.vod) cache.vod = await api.call('get_vod_streams');
+    try {
+        cache.vod = await api.call('get_vod_streams') || [];
+        renderVodList(el);
+    } catch(e) {
+        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Erro ao carregar filmes.</p>';
+    }
+}
+function renderVodList(el) {
     if(!cache.vod || !cache.vod.length) {
         el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum filme.</p>';
         return;
@@ -330,8 +414,17 @@ async function renderVod() {
 
 async function renderSeries() {
     const el = document.getElementById('view-series');
+    if(cache.series) return renderSeriesList(el);
+
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando séries...</p>';
-    if(!cache.series) cache.series = await api.call('get_series');
+    try {
+        cache.series = await api.call('get_series') || [];
+        renderSeriesList(el);
+    } catch(e) {
+        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Erro ao carregar séries.</p>';
+    }
+}
+function renderSeriesList(el) {
     if(!cache.series || !cache.series.length) {
         el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhuma série.</p>';
         return;
@@ -369,7 +462,7 @@ function renderFavorites() {
 }
 
 /* =========================================================
-   TELA INFO (COM DATA CORRIGIDA E BOTÃO SAIR)
+   TELA INFO
    ========================================================= */
 async function renderInfo() {
     if(!cache.userInfo) {
