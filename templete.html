@@ -9,11 +9,8 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/video.js@8.17.4/dist/video-js.min.css" />
-
-<!-- BIBLIOTECAS DO 'MASTER PLAY' E 'ELAS MERECEM' -->
 <script src="https://cdn.jsdelivr.net/npm/video.js@8.17.4/dist/video.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <style>
@@ -127,12 +124,18 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 .cat-chip{display:inline-block;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:0.2s;color:#fff;}
 .cat-chip:hover,.cat-chip.active{background:var(--primary-color);color:#fff;border-color:var(--primary-color);}
 
-/* PLAYER MODAL (LAYOUT PROFISSIONAL) */
+/* PLAYER MODAL */
 .player-wrap{position:relative;background:#000;border-radius:18px;overflow:hidden;aspect-ratio:16/9;box-shadow:0 0 40px rgba(255,255,255,.15);}
 .player-wrap video{width:100%;height:100%;display:block;background:#000;}
 .modal-content.player-modal{background:rgba(0,0,0,0.95);border:1px solid var(--glass-border);color:#fff;border-radius:22px;}
 .player-actions .btn-ghost{background:transparent;color:#fff;border:1px solid var(--glass-border);border-radius:999px;padding:.45rem .8rem;font-weight:600;transition:all .2s;}
 .player-actions .btn-ghost:hover{background:var(--glass);color:#fff}
+
+/* =========================================================
+   CSS PARA A TELA DE CARREGAMENTO
+   ========================================================= */
+.loading-screen{display:flex;justify-content:center;align-items:center;height:100%;min-height:300px;color:var(--txt-muted);font-size:1.1rem;gap:10px;}
+.loading-screen i{font-size:1.5rem;animation:spin 1s linear infinite;}
 </style>
 </head>
 <body>
@@ -309,7 +312,7 @@ function mountApp() {
 }
 
 /* =========================================================
-   TELA INICIAL
+   TELA INICIAL (COM TIMEOUT DE SEGURANÇA)
    ========================================================= */
 async function renderHome() {
     const homeDiv = document.getElementById('view-home');
@@ -325,36 +328,54 @@ async function renderHome() {
             </button>
         </div>
         <div id="homeContent">
-            <div style="text-align:center;padding:20px;opacity:0.7;">
-                <i class="bi bi-arrow-repeat me-2"></i>Carregando vitrine...
+            <div class="loading-screen">
+                <i class="bi bi-arrow-repeat"></i>
+                <span>Carregando vitrine...</span>
             </div>
         </div>
     `;
 
+    // Timeout de segurança: Se demorar mais de 10s, mostra erro e para de tentar.
+    const timeout = setTimeout(() => {
+        document.getElementById('homeContent').innerHTML = `
+            <div class="loading-screen" style="color:#ff6b6b;flex-direction:column;">
+                <i class="bi bi-exclamation-circle" style="animation:none;font-size:2rem;"></i>
+                <span>Tempo limite excedido. Verifique sua internet.</span>
+            </div>
+        `;
+    }, 10000);
+
     try {
-        const [liveData, vodData, seriesData, liveCats, vodCats, seriesCats] = await Promise.all([
-            !cache.live ? api.call('get_live_streams') : cache.live,
-            !cache.vod ? api.call('get_vod_streams') : cache.vod,
-            !cache.series ? api.call('get_series') : cache.series,
-            !cache.cats.live ? api.call('get_live_categories') : cache.cats.live,
-            !cache.cats.vod ? api.call('get_vod_categories') : cache.cats.vod,
-            !cache.cats.series ? api.call('get_series_categories') : cache.cats.series
+        // 1. Carregar Categorias (leve)
+        const [liveCats, vodCats, seriesCats] = await Promise.all([
+            api.call('get_live_categories'),
+            api.call('get_vod_categories'),
+            api.call('get_series_categories')
         ]);
+        cache.cats.live = liveCats || [];
+        cache.cats.vod = vodCats || [];
+        cache.cats.series = seriesCats || [];
 
-        if(!cache.live) cache.live = liveData || [];
-        if(!cache.vod) cache.vod = vodData || [];
-        if(!cache.series) cache.series = seriesData || [];
-        if(!cache.cats.live) cache.cats.live = liveCats || [];
-        if(!cache.cats.vod) cache.cats.vod = vodCats || [];
-        if(!cache.cats.series) cache.cats.series = seriesCats || [];
+        // 2. Carregar Apenas os primeiros itens (para não travar)
+        const [liveData, vodData, seriesData] = await Promise.all([
+            api.call('get_live_streams'),
+            api.call('get_vod_streams'),
+            api.call('get_series')
+        ]);
+        cache.live = liveData || [];
+        cache.vod = vodData || [];
+        cache.series = seriesData || [];
 
-        // Slider
+        clearTimeout(timeout); // Cancelar o timeout de segurança, pois deu certo.
+
+        // MONTAR O SLIDER
         let sliderItems = [];
-        cache.vod.slice(0, 5).forEach(s => sliderItems.push({img: s.stream_icon, title: s.name}));
-        cache.series.slice(0, 5).forEach(s => sliderItems.push({img: s.cover, title: s.name}));
+        try { cache.vod.slice(0, 5).forEach(s => sliderItems.push({img: s.stream_icon, title: s.name})); } catch(e){}
+        try { cache.series.slice(0, 5).forEach(s => sliderItems.push({img: s.cover, title: s.name})); } catch(e){}
 
         const carouselInner = document.getElementById('carousel-inner');
         const carouselIndicators = document.getElementById('carousel-indicators');
+        carouselInner.innerHTML = ''; carouselIndicators.innerHTML = '';
         
         if(sliderItems.length > 0) {
             sliderItems.forEach((item, index) => {
@@ -376,33 +397,49 @@ async function renderHome() {
             });
         }
 
-        // Listas
+        // MONTAR AS LISTAS DA HOME
         let html = '';
-        if(cache.live.length) {
-            html += `<div class="section-head"><h5>📡 Canais em destaque</h5></div><div class="h-scroll">`;
-            cache.live.slice(0, 10).forEach(s => {
-                html += `<div class="poster" onclick="playLive('${s.stream_id}', '${s.name}')"><div class="img-wrap" style="aspect-ratio:16/9;">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div><div class="title">${s.name}</div></div>`;
-            });
-            html += `</div>`;
-        }
-        if(cache.vod.length) {
-            html += `<div class="section-head"><h5>🎬 Filmes em destaque</h5></div><div class="h-scroll">`;
-            cache.vod.slice(0, 10).forEach(s => {
-                html += `<div class="poster" onclick="playVod('${s.stream_id}', '${s.name}')"><div class="img-wrap">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div><div class="title">${s.name}</div></div>`;
-            });
-            html += `</div>`;
-        }
-        if(cache.series.length) {
-            html += `<div class="section-head"><h5>📺 Séries em destaque</h5></div><div class="h-scroll">`;
-            cache.series.slice(0, 10).forEach(s => {
-                html += `<div class="poster" onclick="abrirSerie('${s.series_id}')"><div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div><div class="title">${s.name}</div></div>`;
-            });
-            html += `</div>`;
-        }
-        document.getElementById('homeContent').innerHTML = html || '<p style="text-align:center;padding:40px;opacity:0.6;">Nenhum conteúdo.</p>';
+        try {
+            if(cache.live.length) {
+                html += `<div class="section-head"><h5>📡 Canais em destaque</h5></div><div class="h-scroll">`;
+                cache.live.slice(0, 10).forEach(s => {
+                    html += `<div class="poster" onclick="playLive('${s.stream_id}', '${s.name}')"><div class="img-wrap" style="aspect-ratio:16/9;">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div><div class="title">${s.name}</div></div>`;
+                });
+                html += `</div>`;
+            }
+        } catch(e) { console.warn("Erro ao carregar canais na home"); }
+
+        try {
+            if(cache.vod.length) {
+                html += `<div class="section-head"><h5>🎬 Filmes em destaque</h5></div><div class="h-scroll">`;
+                cache.vod.slice(0, 10).forEach(s => {
+                    html += `<div class="poster" onclick="playVod('${s.stream_id}', '${s.name}')"><div class="img-wrap">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div><div class="title">${s.name}</div></div>`;
+                });
+                html += `</div>`;
+            }
+        } catch(e) { console.warn("Erro ao carregar filmes na home"); }
+
+        try {
+            if(cache.series.length) {
+                html += `<div class="section-head"><h5>📺 Séries em destaque</h5></div><div class="h-scroll">`;
+                cache.series.slice(0, 10).forEach(s => {
+                    html += `<div class="poster" onclick="abrirSerie('${s.series_id}')"><div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div><div class="title">${s.name}</div></div>`;
+                });
+                html += `</div>`;
+            }
+        } catch(e) { console.warn("Erro ao carregar séries na home"); }
+
+        document.getElementById('homeContent').innerHTML = html || '<p style="text-align:center;padding:40px;opacity:0.6;">Nenhum conteúdo disponível.</p>';
 
     } catch(e) {
-        document.getElementById('homeContent').innerHTML = '<p style="text-align:center;padding:30px;opacity:0.6;color:#ff6b6b;">Erro ao carregar.</p>';
+        clearTimeout(timeout);
+        console.error("Erro fatal no renderHome:", e);
+        document.getElementById('homeContent').innerHTML = `
+            <div class="loading-screen" style="color:#ff6b6b;flex-direction:column;">
+                <i class="bi bi-exclamation-circle" style="animation:none;font-size:2rem;"></i>
+                <span>Erro: ${e.message || 'Falha na conexão com o servidor.'}</span>
+            </div>
+        `;
     }
 }
 
@@ -411,13 +448,21 @@ async function renderHome() {
    ========================================================= */
 async function renderLive() {
     const el = document.getElementById('view-live');
-    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
-    if(!cache.cats.live) cache.cats.live = await api.call('get_live_categories') || [];
-    if(!cache.live) cache.live = await api.call('get_live_streams') || [];
-    
+    if(!cache.live) {
+        el.innerHTML = '<div class="loading-screen"><i class="bi bi-arrow-repeat"></i><span>Carregando canais...</span></div>';
+        try {
+            cache.live = await api.call('get_live_streams') || [];
+            cache.cats.live = await api.call('get_live_categories') || [];
+            renderLiveContent(el);
+        } catch(e) { el.innerHTML = '<p style="padding:30px;text-align:center;color:#ff6b6b;">Erro.</p>'; }
+    } else {
+        renderLiveContent(el);
+    }
+}
+function renderLiveContent(el) {
     let html = `<div class="cat-chip-wrapper">`;
     html += `<span class="cat-chip active" onclick="filterLive('all', this)">TODOS</span>`;
-    cache.cats.live.slice(0, 15).forEach(c => {
+    (cache.cats.live || []).slice(0, 15).forEach(c => {
         html += `<span class="cat-chip" onclick="filterLive('${c.category_id}', this)">${c.category_name}</span>`;
     });
     html += `</div><div id="live-list-content"></div>`;
@@ -428,7 +473,7 @@ async function renderLive() {
 window.filterLive = (catId, el) => {
     $$('.cat-chip').forEach(c => c.classList.remove('active'));
     if(el) el.classList.add('active');
-    let items = catId === 'all' ? cache.live : cache.live.filter(s => String(s.category_id) === String(catId));
+    let items = catId === 'all' ? (cache.live || []) : (cache.live || []).filter(s => String(s.category_id) === String(catId));
     const container = document.getElementById('live-list-content');
     if(!items.length) { container.innerHTML = '<p style="padding:20px;opacity:0.6;">Nenhum canal.</p>'; return; }
     let html = '';
@@ -448,13 +493,21 @@ window.filterLive = (catId, el) => {
 
 async function renderVod() {
     const el = document.getElementById('view-vod');
-    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
-    if(!cache.cats.vod) cache.cats.vod = await api.call('get_vod_categories') || [];
-    if(!cache.vod) cache.vod = await api.call('get_vod_streams') || [];
-    
+    if(!cache.vod) {
+        el.innerHTML = '<div class="loading-screen"><i class="bi bi-arrow-repeat"></i><span>Carregando filmes...</span></div>';
+        try {
+            cache.vod = await api.call('get_vod_streams') || [];
+            cache.cats.vod = await api.call('get_vod_categories') || [];
+            renderVodContent(el);
+        } catch(e) { el.innerHTML = '<p style="padding:30px;text-align:center;color:#ff6b6b;">Erro.</p>'; }
+    } else {
+        renderVodContent(el);
+    }
+}
+function renderVodContent(el) {
     let html = `<div class="cat-chip-wrapper">`;
     html += `<span class="cat-chip active" onclick="filterVod('all', this)">TODOS</span>`;
-    cache.cats.vod.slice(0, 15).forEach(c => {
+    (cache.cats.vod || []).slice(0, 15).forEach(c => {
         html += `<span class="cat-chip" onclick="filterVod('${c.category_id}', this)">${c.category_name}</span>`;
     });
     html += `</div><div id="vod-list-content"></div>`;
@@ -465,7 +518,7 @@ async function renderVod() {
 window.filterVod = (catId, el) => {
     $$('.cat-chip').forEach(c => c.classList.remove('active'));
     if(el) el.classList.add('active');
-    let items = catId === 'all' ? cache.vod : cache.vod.filter(s => String(s.category_id) === String(catId));
+    let items = catId === 'all' ? (cache.vod || []) : (cache.vod || []).filter(s => String(s.category_id) === String(catId));
     const container = document.getElementById('vod-list-content');
     if(!items.length) { container.innerHTML = '<p style="padding:20px;opacity:0.6;">Nenhum filme.</p>'; return; }
     let html = '<div class="poster-grid">';
@@ -478,13 +531,21 @@ window.filterVod = (catId, el) => {
 
 async function renderSeries() {
     const el = document.getElementById('view-series');
-    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
-    if(!cache.cats.series) cache.cats.series = await api.call('get_series_categories') || [];
-    if(!cache.series) cache.series = await api.call('get_series') || [];
-    
+    if(!cache.series) {
+        el.innerHTML = '<div class="loading-screen"><i class="bi bi-arrow-repeat"></i><span>Carregando séries...</span></div>';
+        try {
+            cache.series = await api.call('get_series') || [];
+            cache.cats.series = await api.call('get_series_categories') || [];
+            renderSeriesContent(el);
+        } catch(e) { el.innerHTML = '<p style="padding:30px;text-align:center;color:#ff6b6b;">Erro.</p>'; }
+    } else {
+        renderSeriesContent(el);
+    }
+}
+function renderSeriesContent(el) {
     let html = `<div class="cat-chip-wrapper">`;
     html += `<span class="cat-chip active" onclick="filterSeries('all', this)">TODOS</span>`;
-    cache.cats.series.slice(0, 15).forEach(c => {
+    (cache.cats.series || []).slice(0, 15).forEach(c => {
         html += `<span class="cat-chip" onclick="filterSeries('${c.category_id}', this)">${c.category_name}</span>`;
     });
     html += `</div><div id="series-list-content"></div>`;
@@ -495,7 +556,7 @@ async function renderSeries() {
 window.filterSeries = (catId, el) => {
     $$('.cat-chip').forEach(c => c.classList.remove('active'));
     if(el) el.classList.add('active');
-    let items = catId === 'all' ? cache.series : cache.series.filter(s => String(s.category_id) === String(catId));
+    let items = catId === 'all' ? (cache.series || []) : (cache.series || []).filter(s => String(s.category_id) === String(catId));
     const container = document.getElementById('series-list-content');
     if(!items.length) { container.innerHTML = '<p style="padding:20px;opacity:0.6;">Nenhuma série.</p>'; return; }
     let html = '<div class="poster-grid">';
@@ -559,7 +620,7 @@ window.playFav = (id, name, type) => {
 };
 
 /* =========================================================
-   MECÂNICA DO PLAYER (USANDO O CÓDIGO DO 'ELAS MERECEM')
+   MECÂNICA DO PLAYER (CORRIGIDA E SEGURA)
    ========================================================= */
 function detectType(url, ext) {
     const u = (url || '').toLowerCase().split('?')[0];
@@ -655,11 +716,11 @@ function play(url, title) {
 }
 
 /* =========================================================
-   MECÂNICA DE SÉRIES (USANDO O CÓDIGO DO 'MASTER PLAY')
+   MECÂNICA DE SÉRIES
    ========================================================= */
 window.abrirSerie = (id) => {
-    let s = cache.series.find(x => String(x.series_id) === String(id));
-    if (!s) s = cache.series.find(x => String(x.stream_id) === String(id));
+    let s = (cache.series || []).find(x => String(x.series_id) === String(id));
+    if (!s) s = (cache.series || []).find(x => String(x.stream_id) === String(id));
     if (!s) { alert('Série não encontrada'); return; }
 
     const modalTitle = document.getElementById('seriesModalTitle');
@@ -737,7 +798,7 @@ window.abrirSerie = (id) => {
         });
 };
 
-// Botões do Player (Para garantir que funcionem)
+// Botões do Player
 $('#btnBack10').addEventListener('click',()=>{ if(videojsPlayer) videojsPlayer.currentTime(Math.max(0, videojsPlayer.currentTime()-10)); });
 $('#btnFwd10').addEventListener('click',()=>{ if(videojsPlayer) videojsPlayer.currentTime(videojsPlayer.currentTime()+10); });
 $('#btnFs').addEventListener('click',()=>{ if(videojsPlayer) { if(videojsPlayer.isFullscreen()) videojsPlayer.exitFullscreen(); else videojsPlayer.requestFullscreen(); } });
