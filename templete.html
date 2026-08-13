@@ -7,16 +7,12 @@
 <title>{{app_name}}</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/video.js@8.17.4/dist/video-js.min.css" />
-
-<!-- BIBLIOTECA HLS.JS OBRIGATÓRIA PARA O PLAYER FUNCIONAR NO CELULAR -->
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/video.js@8.17.4/dist/video.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
 <style>
-/* =========================================================
-   BASE DO SISTEMA
-   ========================================================= */
 :root {
   --primary-color: {{primary_color}};
   --primary-rgb: {{primary_rgb}};
@@ -25,10 +21,10 @@
   --glass-border: rgba(255,255,255,0.10);
   --shadow: 0 0 30px rgba({{primary_rgb}}, 0.3);
 }
-*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif;}
 body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 
-/* TELA DE LOGIN */
+/* LOGIN */
 .login-screen{position:fixed;inset:0;z-index:9999;background:var(--bg-app);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
 .login-screen .logo{font-size:2.2rem;font-weight:800;color:var(--primary-color);text-shadow:var(--shadow);margin-bottom:30px;}
 .login-card{width:100%;max-width:380px;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;padding:25px;}
@@ -37,7 +33,7 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 .login-card button{width:100%;padding:14px;background:var(--primary-color);border:none;border-radius:12px;color:#fff;font-weight:bold;font-size:1rem;cursor:pointer;transition:0.3s;box-shadow:var(--shadow);}
 .login-card button:hover{transform:translateY(-2px);}
 
-/* SPLASH SCREEN */
+/* SPLASH */
 #splash-screen{position:fixed;inset:0;z-index:10000;background:var(--bg-app);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.8s ease;}
 #splash-screen.hide{opacity:0;pointer-events:none;}
 .splash-logo{font-size:3rem;font-weight:800;color:var(--primary-color);text-shadow:var(--shadow);}
@@ -48,7 +44,7 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 #app{display:none;}
 
 /* =========================================================
-   ESTILOS DE MENU
+   ESTILOS DE MENU (Gerador escolhe)
    ========================================================= */
 {{MENU_STYLES}}
 {{MENU_START_1}}
@@ -73,7 +69,7 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 {{MENU_END_3}}
 
 /* =========================================================
-   ESTILOS DE CARD E PLAYER
+   ESTILOS DE CARD (Gerador escolhe)
    ========================================================= */
 {{CARD_STYLES}}
 {{CARD_START_1}}
@@ -91,21 +87,13 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 {{CARD_END_2}}
 
 /* =========================================================
-   ESTRUTURA DAS VIEWS E COMPONENTES
+   COMPONENTES VISUAIS
    ========================================================= */
-.view{display:none;padding:15px;padding-bottom:80px;}
+.view{display:none;padding:15px;padding-bottom:90px;}
 .view.active{display:block;}
+.app-header-top{display:flex;align-items:center;justify-content:space-between;padding:15px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border-bottom:1px solid var(--glass-border);position:sticky;top:0;z-index:50;}
+.app-header-top h1{font-size:1.2rem;font-weight:800;color:var(--primary-color);}
 
-/* Slider e banners */
-#hero-carousel{width:100%;aspect-ratio:16/9;border-radius:20px;overflow:hidden;margin-bottom:15px;position:relative;background:var(--bg-app);}
-.carousel-item{height:100%;width:100%;position:relative;}
-.carousel-item img{width:100%;height:100%;object-fit:cover;}
-.carousel-overlay{position:absolute;bottom:0;left:0;width:100%;padding:20px;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.8));}
-.carousel-overlay h5{font-weight:800;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,0.8);}
-.carousel-control-prev,.carousel-control-next{filter:invert(1);}
-.carousel-indicators [data-bs-target]{background-color:var(--primary-color);}
-
-/* Cards e Listas */
 .ch-logo{width:40px;height:40px;border-radius:10px;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .ch-logo img{max-width:80%;max-height:80%;object-fit:contain;}
 .ch-info{flex:1;}.ch-info .ch-name{font-weight:600;font-size:14px;}
@@ -116,24 +104,19 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 .h-scroll{display:flex;gap:12px;overflow-x:auto;padding-bottom:5px;scroll-snap-type:x mandatory;}
 .h-scroll::-webkit-scrollbar{display:none;}
 .h-scroll .poster{flex:0 0 auto;width:120px;scroll-snap-align:start;}
-
 .section-head{display:flex;justify-content:space-between;align-items:center;margin:15px 0 10px;}
 .section-head h5{font-weight:600;color:var(--primary-color);margin:0;}
 
-/* Categorias */
-.cat-chip{display:inline-block;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;padding:6px 14px;font-size:13px;font-weight:600;margin-right:8px;margin-bottom:8px;cursor:pointer;transition:0.2s;}
-.cat-chip:hover{background:var(--primary-color);color:#fff;border-color:var(--primary-color);}
+/* CHIPS DE CATEGORIA (DENTRO DE CADA ABA) */
+.cat-chip{display:inline-block;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;padding:6px 14px;font-size:13px;font-weight:600;margin-right:8px;margin-bottom:8px;cursor:pointer;transition:0.2s;color:#fff;}
+.cat-chip:hover,.cat-chip.active{background:var(--primary-color);color:#fff;border-color:var(--primary-color);}
+.cat-chip-wrapper{padding-bottom:10px;border-bottom:1px solid var(--glass-border);margin-bottom:15px;}
 </style>
 </head>
 <body>
 
-<!-- Splash Screen -->
-<div id="splash-screen">
-    <div class="splash-logo">{{app_name}}</div>
-    <div class="splash-loader"></div>
-</div>
-
-<!-- Login -->
+<!-- Splash & Login -->
+<div id="splash-screen"><div class="splash-logo">{{app_name}}</div><div class="splash-loader"></div></div>
 <div class="login-screen" id="loginScreen">
     <div class="logo">{{app_name}}</div>
     <div class="login-card">
@@ -154,14 +137,29 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
     <div id="view-info" class="view"></div>
 </div>
 
-<!-- PLAYER MODAL (LIMPO E LEVE) -->
+<!-- PLAYER MODAL -->
 <div class="modal fade" id="playerModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-xl">
-    <div class="modal-content" style="background:#000;border:none;">
-      <div class="modal-body p-0" style="background:#000;">
-        <div style="aspect-ratio:16/9;background:#000;">
-            <video id="videoEl" controls playsinline style="width:100%;height:100%;"></video>
+    <div class="modal-content" style="background:rgba(0,0,0,0.95);border:1px solid var(--glass-border);color:#fff;border-radius:22px;">
+      <div class="modal-header border-0 pb-0">
+        <div class="flex-grow-1 pe-2">
+          <div class="player-title fw-bold" id="playerTitle">—</div>
+          <div class="small text-muted-2" id="playerSubtitle">—</div>
         </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body pt-2">
+        <div style="position:relative;background:#000;border-radius:18px;overflow:hidden;aspect-ratio:16/9;box-shadow:0 0 40px rgba(255,255,255,.15);">
+            <video id="videoEl" class="video-js vjs-big-play-centered" controls preload="auto" playsinline></video>
+        </div>
+        <div class="player-actions d-flex gap-2 flex-wrap mt-3">
+          <button class="btn-ghost" id="btnBack10"><i class="bi bi-arrow-counterclockwise me-1"></i>-10s</button>
+          <button class="btn-ghost" id="btnFwd10"><i class="bi bi-arrow-clockwise me-1"></i>+10s</button>
+          <button class="btn-ghost" id="btnPip"><i class="bi bi-pip me-1"></i>PiP</button>
+          <button class="btn-ghost" id="btnFs"><i class="bi bi-arrows-fullscreen me-1"></i>Tela cheia</button>
+          <button class="btn-ghost" id="btnFav"><i class="bi bi-heart me-1"></i>Favoritar</button>
+        </div>
+        <div id="playerExtra" class="mt-3 small text-muted-2"></div>
       </div>
     </div>
   </div>
@@ -175,27 +173,30 @@ const MENU_STYLE = "{{menu_choice}}";
 const CARD_STYLE = "{{card_choice}}";
 
 let SERVER, USER, PASS;
-let currentHls = null;
+let videojsPlayer = null, mpegtsInstance = null;
 const favorites = JSON.parse(localStorage.getItem('favs') || '[]');
 const cache = { live: null, vod: null, series: null, userInfo: null, cats: { live: null, vod: null, series: null } };
 
 /* =========================================================
-   LOGIN E LOGOUT (CORRIGIDO)
+   LOGIN E LOGOUT (CORRIGIDO PARA VOLTAR AO INÍCIO)
    ========================================================= */
 function performLogout() {
     if(confirm('Deseja realmente sair?')) {
-        if(currentHls) { currentHls.destroy(); currentHls = null; }
+        if(videojsPlayer) { videojsPlayer.dispose(); videojsPlayer = null; }
+        if(mpegtsInstance) { mpegtsInstance.destroy(); mpegtsInstance = null; }
         localStorage.clear(); 
-        document.getElementById('view-home').innerHTML = '';
+        
+        // Limpa o cache do App
+        cache.live = null; cache.vod = null; cache.series = null;
+        cache.cats.live = null; cache.cats.vod = null; cache.cats.series = null;
+
+        // Reseta visualmente o app e volta para o Login
         document.getElementById('app').style.display = 'none';
         document.getElementById('splash-screen').style.display = 'none';
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('inputServer').value = '';
         document.getElementById('inputUser').value = '';
         document.getElementById('inputPass').value = '';
-        // Limpa o cache para forçar recarregamento
-        cache.live = null; cache.vod = null; cache.series = null;
-        cache.cats.live = null; cache.cats.vod = null; cache.cats.series = null;
     }
 }
 
@@ -207,6 +208,7 @@ function doLogin() {
     if(!SERVER || !USER || !PASS) { alert("Preencha todos os dados!"); return; }
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('splash-screen').style.display = 'flex';
+    
     setTimeout(() => {
         document.getElementById('splash-screen').classList.add('hide');
         document.getElementById('app').style.display = 'block';
@@ -230,7 +232,7 @@ const api = {
 if(document.getElementById('inputServer').value) doLogin();
 
 /* =========================================================
-   CONFIGURAÇÃO INICIAL DO APP
+   MONTAGEM DO APP
    ========================================================= */
 function mountApp() {
     let menuHTML = '';
@@ -265,12 +267,13 @@ function mountApp() {
         </header>`;
     }
     document.getElementById('menu-container').innerHTML = menuHTML;
-
     document.body.classList.add(CARD_STYLE === 'fluido' ? 'card-fluido' : 'card-padrao');
 
-    // Carrega os dados
-    loadHomeData();
-    
+    // FORÇA A ABA HOME A SER A PRIMEIRA A CARREGAR
+    document.querySelector('.nav-item[data-target="home"]')?.classList.add('active');
+    document.getElementById('view-home').classList.add('active');
+    renderHome();
+
     $$('.nav-item').forEach(b => {
         b.addEventListener('click', function() {
             $$('.nav-item').forEach(n => n.classList.remove('active'));
@@ -278,6 +281,7 @@ function mountApp() {
             this.classList.add('active');
             const target = this.dataset.target;
             document.getElementById('view-' + target).classList.add('active');
+            if(target === 'home') renderHome();
             if(target === 'live') renderLive();
             if(target === 'vod') renderVod();
             if(target === 'series') renderSeries();
@@ -288,241 +292,151 @@ function mountApp() {
 }
 
 /* =========================================================
-   TELA INICIAL (COM SLIDER + CATEGORIAS)
+   TELA INICIAL (APENAS DESTAQUES)
    ========================================================= */
-async function loadHomeData() {
+async function renderHome() {
     const homeDiv = document.getElementById('view-home');
-    
-    // Layout básico da Home
-    homeDiv.innerHTML = `
-        <div id="hero-carousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3500">
-            <div class="carousel-indicators" id="carousel-indicators"></div>
-            <div class="carousel-inner" id="carousel-inner"></div>
-            <button class="carousel-control-prev" type="button" data-bs-target="#hero-carousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon"></span>
-            </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#hero-carousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon"></span>
-            </button>
-        </div>
-        <div id="homeContent">
-            <div style="text-align:center;padding:20px;opacity:0.7;">
-                <i class="bi bi-arrow-repeat me-2"></i>Carregando sua biblioteca...
-            </div>
-        </div>
-    `;
+    homeDiv.innerHTML = `<div style="text-align:center;padding:20px;opacity:0.7;"><i class="bi bi-arrow-repeat me-2"></i>Carregando vitrine...</div>`;
 
     try {
-        // Carrega tudo em paralelo: Categorias e Listas
-        const [liveCats, vodCats, seriesCats, liveData, vodData, seriesData] = await Promise.all([
-            api.call('get_live_categories'),
-            api.call('get_vod_categories'),
-            api.call('get_series_categories'),
-            api.call('get_live_streams'),
-            api.call('get_vod_streams'),
-            api.call('get_series')
+        const [liveData, vodData, seriesData] = await Promise.all([
+            !cache.live ? api.call('get_live_streams') : cache.live,
+            !cache.vod ? api.call('get_vod_streams') : cache.vod,
+            !cache.series ? api.call('get_series') : cache.series
         ]);
+        if(!cache.live) cache.live = liveData || [];
+        if(!cache.vod) cache.vod = vodData || [];
+        if(!cache.series) cache.series = seriesData || [];
 
-        cache.cats.live = liveCats || [];
-        cache.cats.vod = vodCats || [];
-        cache.cats.series = seriesCats || [];
-        cache.live = liveData || [];
-        cache.vod = vodData || [];
-        cache.series = seriesData || [];
-
-        const hasLive = cache.live.length > 0;
-        const hasVod = cache.vod.length > 0;
-        const hasSeries = cache.series.length > 0;
-
-        // Slider (Filmes e Séries)
-        let sliderItems = [];
-        cache.vod.slice(0, 5).forEach(s => sliderItems.push({img: s.stream_icon, title: s.name}));
-        cache.series.slice(0, 5).forEach(s => sliderItems.push({img: s.cover, title: s.name}));
-
-        const carouselInner = document.getElementById('carousel-inner');
-        const carouselIndicators = document.getElementById('carousel-indicators');
-        
-        if(sliderItems.length > 0) {
-            sliderItems.forEach((item, index) => {
-                const isActive = index === 0 ? 'active' : '';
-                const indicator = document.createElement('button');
-                indicator.type = 'button';
-                indicator.dataset.bsTarget = '#hero-carousel';
-                indicator.dataset.bsSlideTo = index;
-                if(isActive) indicator.classList.add('active');
-                carouselIndicators.appendChild(indicator);
-
-                const slide = document.createElement('div');
-                slide.className = `carousel-item ${isActive}`;
-                slide.innerHTML = `
-                    <img src="${item.img || ''}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSIyMCIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiI+U2VtIEltYWdlbjwvdGV4dD48L3N2Zz4=';">
-                    <div class="carousel-overlay"><h5>${item.title}</h5></div>
-                `;
-                carouselInner.appendChild(slide);
-            });
-        } else {
-            document.getElementById('hero-carousel').innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#1a1a2e;border-radius:20px;"><h4 style="opacity:0.5;">Nenhum destaque</h4></div>`;
-        }
-
-        // Conteúdo da Home: Categorias + Listas
         let html = '';
-
-        // Categorias de Canais
-        if(hasLive && cache.cats.live.length > 0) {
-            html += `<div class="section-head"><h5>📡 Categorias de Canais</h5></div><div>`;
-            cache.cats.live.slice(0, 8).forEach(c => {
-                html += `<span class="cat-chip" onclick="navigateTo('live')">${c.category_name}</span>`;
-            });
-            html += `</div>`;
-        }
-
-        // Categorias de Filmes
-        if(hasVod && cache.cats.vod.length > 0) {
-            html += `<div class="section-head" style="margin-top:10px;"><h5>🎬 Categorias de Filmes</h5></div><div>`;
-            cache.cats.vod.slice(0, 8).forEach(c => {
-                html += `<span class="cat-chip" onclick="navigateTo('vod')">${c.category_name}</span>`;
-            });
-            html += `</div>`;
-        }
-
-        // Categorias de Séries
-        if(hasSeries && cache.cats.series.length > 0) {
-            html += `<div class="section-head" style="margin-top:10px;"><h5>📺 Categorias de Séries</h5></div><div>`;
-            cache.cats.series.slice(0, 8).forEach(c => {
-                html += `<span class="cat-chip" onclick="navigateTo('series')">${c.category_name}</span>`;
-            });
-            html += `</div>`;
-        }
-
-        // Destaques Finais
-        if(hasLive) {
-            html += `<div class="section-head"><h5>Canais em destaque</h5></div><div class="h-scroll">`;
+        if(cache.live.length) {
+            html += `<div class="section-head"><h5>📡 Canais em destaque</h5></div><div class="h-scroll">`;
             cache.live.slice(0, 10).forEach(s => {
-                html += `
-                    <div class="poster" onclick="playLive('${s.stream_id}', '${s.name}')">
-                        <div class="img-wrap" style="aspect-ratio:16/9;">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div>
-                        <div class="title">${s.name}</div>
-                    </div>
-                `;
+                html += `<div class="poster" onclick="playLive('${s.stream_id}', '${s.name}')"><div class="img-wrap" style="aspect-ratio:16/9;">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div><div class="title">${s.name}</div></div>`;
             });
             html += `</div>`;
         }
-
-        if(hasVod) {
-            html += `<div class="section-head"><h5>Filmes populares</h5></div><div class="h-scroll">`;
+        if(cache.vod.length) {
+            html += `<div class="section-head"><h5>🎬 Filmes em destaque</h5></div><div class="h-scroll">`;
             cache.vod.slice(0, 10).forEach(s => {
-                html += `
-                    <div class="poster" onclick="playVod('${s.stream_id}', '${s.name}')">
-                        <div class="img-wrap">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div>
-                        <div class="title">${s.name}</div>
-                    </div>
-                `;
+                html += `<div class="poster" onclick="playVod('${s.stream_id}', '${s.name}')"><div class="img-wrap">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div><div class="title">${s.name}</div></div>`;
             });
             html += `</div>`;
         }
-
-        if(hasSeries) {
-            html += `<div class="section-head"><h5>Séries recentes</h5></div><div class="h-scroll">`;
+        if(cache.series.length) {
+            html += `<div class="section-head"><h5>📺 Séries em destaque</h5></div><div class="h-scroll">`;
             cache.series.slice(0, 10).forEach(s => {
-                html += `
-                    <div class="poster">
-                        <div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div>
-                        <div class="title">${s.name}</div>
-                    </div>
-                `;
+                html += `<div class="poster"><div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div><div class="title">${s.name}</div></div>`;
             });
             html += `</div>`;
         }
-
-        if(!hasLive && !hasVod && !hasSeries) {
-            html += `<p style="text-align:center;padding:40px;opacity:0.6;">Nenhum conteúdo encontrado.</p>`;
-        }
-        document.getElementById('homeContent').innerHTML = html;
-
+        homeDiv.innerHTML = html || '<p style="text-align:center;padding:40px;opacity:0.6;">Nenhum conteúdo.</p>';
     } catch(e) {
-        document.getElementById('homeContent').innerHTML = `<p style="text-align:center;padding:30px;opacity:0.6;color:#ff6b6b;">Erro ao carregar dados.</p>`;
+        homeDiv.innerHTML = '<p style="text-align:center;padding:30px;opacity:0.6;color:#ff6b6b;">Erro ao carregar.</p>';
     }
 }
 
 /* =========================================================
-   DEMAIS ABAS
+   ABAS COM CATEGORIAS DENTRO
    ========================================================= */
 async function renderLive() {
     const el = document.getElementById('view-live');
-    if(cache.live) return renderLiveList(el);
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
-    try {
-        cache.live = await api.call('get_live_streams') || [];
-        renderLiveList(el);
-    } catch(e) { el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Erro.</p>'; }
+    if(!cache.cats.live) cache.cats.live = await api.call('get_live_categories') || [];
+    if(!cache.live) cache.live = await api.call('get_live_streams') || [];
+    renderLiveView(el);
 }
-function renderLiveList(el) {
-    if(!cache.live || !cache.live.length) { el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum canal.</p>'; return; }
+function renderLiveView(el) {
+    let html = `<div class="cat-chip-wrapper"><span class="cat-chip active" onclick="filterLive('all', this)">TODOS</span>`;
+    cache.cats.live.slice(0, 10).forEach(c => {
+        html += `<span class="cat-chip" onclick="filterLive('${c.category_id}', this)">${c.category_name}</span>`;
+    });
+    html += `</div><div id="live-list-content"></div>`;
+    el.innerHTML = html;
+    filterLive('all', el.querySelector('.cat-chip.active'));
+}
+
+window.filterLive = (catId, el) => {
+    $$('.cat-chip').forEach(c => c.classList.remove('active'));
+    if(el) el.classList.add('active');
+    let items = catId === 'all' ? cache.live : cache.live.filter(s => String(s.category_id) === String(catId));
+    const container = document.getElementById('live-list-content');
+    if(!items.length) { container.innerHTML = '<p style="padding:20px;opacity:0.6;">Nenhum canal.</p>'; return; }
     let html = '';
-    cache.live.slice(0, 50).forEach(s => {
+    items.slice(0, 50).forEach(s => {
         const fav = favorites.find(f => f.id === s.stream_id && f.type === 'live');
         html += `
             <div class="ch-row">
                 <div class="ch-logo">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div>
                 <div class="ch-info"><div class="ch-name">${s.name}</div></div>
-                <button onclick="toggleFav('live', '${s.stream_id}', '${s.name}', '${s.stream_icon || ''}'); event.stopPropagation();" style="background:transparent;border:none;color:${fav ? 'var(--primary-color)' : 'rgba(255,255,255,0.3)'};font-size:1.2rem;cursor:pointer;">
-                    <i class="bi bi-heart-fill"></i>
-                </button>
-                <button onclick="playLive('${s.stream_id}', '${s.name}'); event.stopPropagation();" style="background:var(--primary-color);border:none;border-radius:50%;width:35px;height:35px;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;">
-                    <i class="bi bi-play-fill"></i>
-                </button>
+                <button onclick="toggleFav('live', '${s.stream_id}', '${s.name}', '${s.stream_icon || ''}'); event.stopPropagation();" style="background:transparent;border:none;color:${fav ? 'var(--primary-color)' : 'rgba(255,255,255,0.3)'};font-size:1.2rem;cursor:pointer;"><i class="bi bi-heart-fill"></i></button>
+                <button onclick="playLive('${s.stream_id}', '${s.name}'); event.stopPropagation();" style="background:var(--primary-color);border:none;border-radius:50%;width:35px;height:35px;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="bi bi-play-fill"></i></button>
             </div>
         `;
     });
-    el.innerHTML = html;
+    container.innerHTML = html;
 }
 
 async function renderVod() {
     const el = document.getElementById('view-vod');
-    if(cache.vod) return renderVodList(el);
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
-    try {
-        cache.vod = await api.call('get_vod_streams') || [];
-        renderVodList(el);
-    } catch(e) { el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Erro.</p>'; }
+    if(!cache.cats.vod) cache.cats.vod = await api.call('get_vod_categories') || [];
+    if(!cache.vod) cache.vod = await api.call('get_vod_streams') || [];
+    renderVodView(el);
 }
-function renderVodList(el) {
-    if(!cache.vod || !cache.vod.length) { el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum filme.</p>'; return; }
+function renderVodView(el) {
+    let html = `<div class="cat-chip-wrapper"><span class="cat-chip active" onclick="filterVod('all', this)">TODOS</span>`;
+    cache.cats.vod.slice(0, 10).forEach(c => {
+        html += `<span class="cat-chip" onclick="filterVod('${c.category_id}', this)">${c.category_name}</span>`;
+    });
+    html += `</div><div id="vod-list-content"></div>`;
+    el.innerHTML = html;
+    filterVod('all', el.querySelector('.cat-chip.active'));
+}
+
+window.filterVod = (catId, el) => {
+    $$('.cat-chip').forEach(c => c.classList.remove('active'));
+    if(el) el.classList.add('active');
+    let items = catId === 'all' ? cache.vod : cache.vod.filter(s => String(s.category_id) === String(catId));
+    const container = document.getElementById('vod-list-content');
+    if(!items.length) { container.innerHTML = '<p style="padding:20px;opacity:0.6;">Nenhum filme.</p>'; return; }
     let html = '<div class="poster-grid">';
-    cache.vod.slice(0, 30).forEach(s => {
-        html += `
-            <div class="poster" onclick="playVod('${s.stream_id}', '${s.name}')">
-                <div class="img-wrap">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div>
-                <div class="title">${s.name}</div>
-            </div>
-        `;
+    items.slice(0, 30).forEach(s => {
+        html += `<div class="poster" onclick="playVod('${s.stream_id}', '${s.name}')"><div class="img-wrap">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div><div class="title">${s.name}</div></div>`;
     });
     html += '</div>';
-    el.innerHTML = html;
+    container.innerHTML = html;
 }
 
 async function renderSeries() {
     const el = document.getElementById('view-series');
-    if(cache.series) return renderSeriesList(el);
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
-    try {
-        cache.series = await api.call('get_series') || [];
-        renderSeriesList(el);
-    } catch(e) { el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Erro.</p>'; }
+    if(!cache.cats.series) cache.cats.series = await api.call('get_series_categories') || [];
+    if(!cache.series) cache.series = await api.call('get_series') || [];
+    renderSeriesView(el);
 }
-function renderSeriesList(el) {
-    if(!cache.series || !cache.series.length) { el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhuma série.</p>'; return; }
+function renderSeriesView(el) {
+    let html = `<div class="cat-chip-wrapper"><span class="cat-chip active" onclick="filterSeries('all', this)">TODOS</span>`;
+    cache.cats.series.slice(0, 10).forEach(c => {
+        html += `<span class="cat-chip" onclick="filterSeries('${c.category_id}', this)">${c.category_name}</span>`;
+    });
+    html += `</div><div id="series-list-content"></div>`;
+    el.innerHTML = html;
+    filterSeries('all', el.querySelector('.cat-chip.active'));
+}
+
+window.filterSeries = (catId, el) => {
+    $$('.cat-chip').forEach(c => c.classList.remove('active'));
+    if(el) el.classList.add('active');
+    let items = catId === 'all' ? cache.series : cache.series.filter(s => String(s.category_id) === String(catId));
+    const container = document.getElementById('series-list-content');
+    if(!items.length) { container.innerHTML = '<p style="padding:20px;opacity:0.6;">Nenhuma série.</p>'; return; }
     let html = '<div class="poster-grid">';
-    cache.series.slice(0, 30).forEach(s => {
-        html += `
-            <div class="poster">
-                <div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div>
-                <div class="title">${s.name}</div>
-            </div>
-        `;
+    items.slice(0, 30).forEach(s => {
+        html += `<div class="poster"><div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div><div class="title">${s.name}</div></div>`;
     });
     html += '</div>';
-    el.innerHTML = html;
+    container.innerHTML = html;
 }
 
 function renderFavorites() {
@@ -530,12 +444,7 @@ function renderFavorites() {
     if(!favorites.length) { el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum favorito.</p>'; return; }
     let html = '<div class="poster-grid">';
     favorites.forEach(s => {
-        html += `
-            <div class="poster" onclick="playFav('${s.id}', '${s.name}', '${s.type}')">
-                <div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div>
-                <div class="title">${s.name}</div>
-            </div>
-        `;
+        html += `<div class="poster" onclick="playFav('${s.id}', '${s.name}', '${s.type}')"><div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div><div class="title">${s.name}</div></div>`;
     });
     html += '</div>';
     el.innerHTML = html;
@@ -565,14 +474,14 @@ async function renderInfo() {
 }
 
 /* =========================================================
-   FAVORITOS E PLAYER (COM HLS.JS CORRIGIDO)
+   FAVORITOS E PLAYER (Mecânica Profissional)
    ========================================================= */
 function toggleFav(type, id, name, cover) {
     const idx = favorites.findIndex(f => f.id === id && f.type === type);
     if(idx > -1) { favorites.splice(idx, 1); } 
     else { favorites.push({ type, id, name, cover }); }
     localStorage.setItem('favs', JSON.stringify(favorites));
-    if(document.getElementById('view-live').classList.contains('active')) renderLive();
+    if(document.getElementById('view-live').classList.contains('active')) filterLive('all', document.querySelector('#view-live .cat-chip.active'));
 }
 
 window.playLive = (id, name) => play(api.streamLive(id), name);
@@ -581,36 +490,55 @@ window.playFav = (id, name, type) => {
     if(type === 'live') play(api.streamLive(id), name);
     if(type === 'vod') play(api.streamVod(id), name);
 };
-window.navigateTo = (target) => {
-    const btn = document.querySelector(`.nav-item[data-target="${target}"]`);
-    if(btn) btn.click();
-};
 
 function play(url, title) {
-    const video = document.getElementById('videoEl');
-    if(currentHls) { currentHls.destroy(); currentHls = null; }
-    video.src = '';
+    if(videojsPlayer) { videojsPlayer.dispose(); videojsPlayer = null; }
+    if(mpegtsInstance) { mpegtsInstance.destroy(); mpegtsInstance = null; }
     
+    $('#playerTitle').textContent = title || 'Tocando';
+    $('#playerSubtitle').textContent = '';
+    $('#playerExtra').innerHTML = '';
+
     new bootstrap.Modal('#playerModal').show();
+    resetVideoJs();
     
     setTimeout(() => {
-        if (Hls.isSupported()) {
-            currentHls = new Hls();
-            currentHls.loadSource(url);
-            currentHls.attachMedia(video);
-            currentHls.on(Hls.Events.MANIFEST_PARSED, function() {
-                video.play();
-            });
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = url;
-            video.addEventListener('loadedmetadata', function() {
-                video.play();
-            });
-        } else {
-            alert('Seu navegador não suporta streaming.');
-        }
-    }, 300);
+        const player = videojs('videoEl', {
+            controls: true, autoplay: true, fluid: true, responsive: true,
+            html5: { vhs: { overrideNative: false, enableLowInitialPlaylist: true } }
+        });
+        videojsPlayer = player;
+        
+        player.ready(() => {
+            const mediaEl = player.tech({ IWillNotUseThisInPlugins: true }).el();
+            const canMpegTs = () => window.mpegts && mpegts.getFeatureList && (mpegts.getFeatureList().msePlayback || mpegts.getFeatureList().mseLivePlayback);
+            
+            const urlLower = url.toLowerCase();
+            const isMpegTs = urlLower.endsWith('.ts') || urlLower.endsWith('.m3u8') === false;
+            
+            if (isMpegTs && canMpegTs()) {
+                mpegtsInstance = mpegts.createPlayer({ type: 'mpegts', isLive: true, url: url });
+                mpegtsInstance.attachMediaElement(mediaEl);
+                mpegtsInstance.load();
+                mpegtsInstance.play();
+            } else {
+                player.src({ src: url, type: 'application/x-mpegURL' });
+                player.load();
+                player.play();
+            }
+        });
+    }, 400);
 }
+
+function resetVideoJs() {
+    const wrap = document.querySelector('#playerModal .player-wrap');
+    if(wrap) wrap.innerHTML = '<video id="videoEl" class="video-js vjs-big-play-centered" controls preload="auto" playsinline></video>';
+}
+
+// Botões do Player
+$('#btnBack10').addEventListener('click',()=>{ if(videojsPlayer) videojsPlayer.currentTime(Math.max(0, videojsPlayer.currentTime()-10)); });
+$('#btnFwd10').addEventListener('click',()=>{ if(videojsPlayer) videojsPlayer.currentTime(videojsPlayer.currentTime()+10); });
+$('#btnFs').addEventListener('click',()=>{ if(videojsPlayer) { if(videojsPlayer.isFullscreen()) videojsPlayer.exitFullscreen(); else videojsPlayer.requestFullscreen(); } });
 </script>
 </body>
 </html>
