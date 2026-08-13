@@ -87,13 +87,23 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 {{CARD_END_2}}
 
 /* =========================================================
-   COMPONENTES VISUAIS
+   COMPONENTES VISUAIS E LOGICAS
    ========================================================= */
 .view{display:none;padding:15px;padding-bottom:90px;}
 .view.active{display:block;}
 .app-header-top{display:flex;align-items:center;justify-content:space-between;padding:15px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border-bottom:1px solid var(--glass-border);position:sticky;top:0;z-index:50;}
 .app-header-top h1{font-size:1.2rem;font-weight:800;color:var(--primary-color);}
 
+/* SLIDER DE DESTAQUE (PUXA FILMES E SÉRIES) */
+#hero-carousel{width:100%;aspect-ratio:16/9;border-radius:20px;overflow:hidden;margin-bottom:15px;position:relative;background:var(--bg-app);}
+.carousel-item{height:100%;width:100%;position:relative;}
+.carousel-item img{width:100%;height:100%;object-fit:cover;}
+.carousel-overlay{position:absolute;bottom:0;left:0;width:100%;padding:20px;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.8));}
+.carousel-overlay h5{font-weight:800;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,0.8);}
+.carousel-control-prev,.carousel-control-next{filter:invert(1);}
+.carousel-indicators [data-bs-target]{background-color:var(--primary-color);}
+
+/* GRID E LISTAS */
 .ch-logo{width:40px;height:40px;border-radius:10px;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .ch-logo img{max-width:80%;max-height:80%;object-fit:contain;}
 .ch-info{flex:1;}.ch-info .ch-name{font-weight:600;font-size:14px;}
@@ -107,10 +117,17 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 .section-head{display:flex;justify-content:space-between;align-items:center;margin:15px 0 10px;}
 .section-head h5{font-weight:600;color:var(--primary-color);margin:0;}
 
-/* CHIPS DE CATEGORIA (DENTRO DE CADA ABA) */
-.cat-chip{display:inline-block;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;padding:6px 14px;font-size:13px;font-weight:600;margin-right:8px;margin-bottom:8px;cursor:pointer;transition:0.2s;color:#fff;}
+/* CHIPS DE CATEGORIA (ORGANIZADOS E FILTRÁVEIS) */
+.cat-chip-wrapper{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0;border-bottom:1px solid var(--glass-border);margin-bottom:15px;}
+.cat-chip{display:inline-block;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:0.2s;color:#fff;}
 .cat-chip:hover,.cat-chip.active{background:var(--primary-color);color:#fff;border-color:var(--primary-color);}
-.cat-chip-wrapper{padding-bottom:10px;border-bottom:1px solid var(--glass-border);margin-bottom:15px;}
+
+/* PLAYER MODAL */
+.player-wrap{position:relative;background:#000;border-radius:18px;overflow:hidden;aspect-ratio:16/9;box-shadow:0 0 40px rgba(255,255,255,.15);}
+.player-wrap video{width:100%;height:100%;display:block;background:#000;}
+.modal-content.player-modal{background:rgba(0,0,0,0.95);border:1px solid var(--glass-border);color:#fff;border-radius:22px;}
+.player-actions .btn-ghost{background:transparent;color:#fff;border:1px solid var(--glass-border);border-radius:999px;padding:.45rem .8rem;font-weight:600;transition:all .2s;}
+.player-actions .btn-ghost:hover{background:var(--glass);color:#fff}
 </style>
 </head>
 <body>
@@ -137,10 +154,10 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
     <div id="view-info" class="view"></div>
 </div>
 
-<!-- PLAYER MODAL -->
+<!-- PLAYER MODAL (Mecânica Híbrida) -->
 <div class="modal fade" id="playerModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-xl">
-    <div class="modal-content" style="background:rgba(0,0,0,0.95);border:1px solid var(--glass-border);color:#fff;border-radius:22px;">
+    <div class="modal-content player-modal">
       <div class="modal-header border-0 pb-0">
         <div class="flex-grow-1 pe-2">
           <div class="player-title fw-bold" id="playerTitle">—</div>
@@ -149,9 +166,7 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
       <div class="modal-body pt-2">
-        <div style="position:relative;background:#000;border-radius:18px;overflow:hidden;aspect-ratio:16/9;box-shadow:0 0 40px rgba(255,255,255,.15);">
-            <video id="videoEl" class="video-js vjs-big-play-centered" controls preload="auto" playsinline></video>
-        </div>
+        <div class="player-wrap"><video id="videoEl" class="video-js vjs-big-play-centered" controls preload="auto" playsinline></video></div>
         <div class="player-actions d-flex gap-2 flex-wrap mt-3">
           <button class="btn-ghost" id="btnBack10"><i class="bi bi-arrow-counterclockwise me-1"></i>-10s</button>
           <button class="btn-ghost" id="btnFwd10"><i class="bi bi-arrow-clockwise me-1"></i>+10s</button>
@@ -165,6 +180,21 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
   </div>
 </div>
 
+<!-- MODAL DE SÉRIES (Dropdown de Temporadas e Episódios) -->
+<div class="modal fade" id="seriesModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content player-modal">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold" id="seriesModalTitle">Séries</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="seriesModalBody">
+        <div class="text-center p-3"><i class="bi bi-arrow-repeat me-2"></i>Carregando episódios...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const $=(s)=>document.querySelector(s);
 const $$=(s)=>[...document.querySelectorAll(s)];
@@ -173,23 +203,23 @@ const MENU_STYLE = "{{menu_choice}}";
 const CARD_STYLE = "{{card_choice}}";
 
 let SERVER, USER, PASS;
-let videojsPlayer = null, mpegtsInstance = null;
+let videojsPlayer=null, mpegtsInstance=null;
+let currentHls = null;
 const favorites = JSON.parse(localStorage.getItem('favs') || '[]');
 const cache = { live: null, vod: null, series: null, userInfo: null, cats: { live: null, vod: null, series: null } };
 
 /* =========================================================
-   LOGIN E LOGOUT (CORRIGIDO PARA VOLTAR AO INÍCIO)
+   LOGIN E LOGOUT
    ========================================================= */
 function performLogout() {
     if(confirm('Deseja realmente sair?')) {
         if(videojsPlayer) { videojsPlayer.dispose(); videojsPlayer = null; }
+        if(currentHls) { currentHls.destroy(); currentHls = null; }
         if(mpegtsInstance) { mpegtsInstance.destroy(); mpegtsInstance = null; }
         localStorage.clear(); 
-        
         // Limpa o cache do App
         cache.live = null; cache.vod = null; cache.series = null;
         cache.cats.live = null; cache.cats.vod = null; cache.cats.series = null;
-
         // Reseta visualmente o app e volta para o Login
         document.getElementById('app').style.display = 'none';
         document.getElementById('splash-screen').style.display = 'none';
@@ -197,6 +227,9 @@ function performLogout() {
         document.getElementById('inputServer').value = '';
         document.getElementById('inputUser').value = '';
         document.getElementById('inputPass').value = '';
+        // Fecha qualquer modal aberto
+        const modals = document.querySelectorAll('.modal.show');
+        modals.forEach(m => { const inst = bootstrap.Modal.getInstance(m); if(inst) inst.hide(); });
     }
 }
 
@@ -226,7 +259,8 @@ const api = {
         return r.json();
     },
     streamLive(id) { return SERVER + '/live/' + USER + '/' + PASS + '/' + id + '.m3u8'; },
-    streamVod(id) { return SERVER + '/movie/' + USER + '/' + PASS + '/' + id + '.mp4'; }
+    streamVod(id, ext='mp4') { return SERVER + '/movie/' + USER + '/' + PASS + '/' + id + '.' + ext; },
+    streamEp(id, ext='mp4') { return SERVER + '/series/' + USER + '/' + PASS + '/' + id + '.' + ext; }
 };
 
 if(document.getElementById('inputServer').value) doLogin();
@@ -292,22 +326,79 @@ function mountApp() {
 }
 
 /* =========================================================
-   TELA INICIAL (APENAS DESTAQUES)
+   TELA INICIAL (COM SLIDER RECUPERADO)
    ========================================================= */
 async function renderHome() {
     const homeDiv = document.getElementById('view-home');
-    homeDiv.innerHTML = `<div style="text-align:center;padding:20px;opacity:0.7;"><i class="bi bi-arrow-repeat me-2"></i>Carregando vitrine...</div>`;
+    homeDiv.innerHTML = `
+        <div id="hero-carousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
+            <div class="carousel-indicators" id="carousel-indicators"></div>
+            <div class="carousel-inner" id="carousel-inner"></div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#hero-carousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#hero-carousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+            </button>
+        </div>
+        <div id="homeContent">
+            <div style="text-align:center;padding:20px;opacity:0.7;">
+                <i class="bi bi-arrow-repeat me-2"></i>Carregando vitrine...
+            </div>
+        </div>
+    `;
 
     try {
-        const [liveData, vodData, seriesData] = await Promise.all([
+        const [liveData, vodData, seriesData, liveCats, vodCats, seriesCats] = await Promise.all([
             !cache.live ? api.call('get_live_streams') : cache.live,
             !cache.vod ? api.call('get_vod_streams') : cache.vod,
-            !cache.series ? api.call('get_series') : cache.series
+            !cache.series ? api.call('get_series') : cache.series,
+            !cache.cats.live ? api.call('get_live_categories') : cache.cats.live,
+            !cache.cats.vod ? api.call('get_vod_categories') : cache.cats.vod,
+            !cache.cats.series ? api.call('get_series_categories') : cache.cats.series
         ]);
+
         if(!cache.live) cache.live = liveData || [];
         if(!cache.vod) cache.vod = vodData || [];
         if(!cache.series) cache.series = seriesData || [];
+        if(!cache.cats.live) cache.cats.live = liveCats || [];
+        if(!cache.cats.vod) cache.cats.vod = vodCats || [];
+        if(!cache.cats.series) cache.cats.series = seriesCats || [];
 
+        const hasVod = cache.vod.length > 0;
+        const hasSeries = cache.series.length > 0;
+
+        // SLIDER MONTADO COM FILMES E SÉRIES
+        let sliderItems = [];
+        if(hasVod) cache.vod.slice(0, 5).forEach(s => sliderItems.push({img: s.stream_icon, title: s.name}));
+        if(hasSeries) cache.series.slice(0, 5).forEach(s => sliderItems.push({img: s.cover, title: s.name}));
+
+        const carouselInner = document.getElementById('carousel-inner');
+        const carouselIndicators = document.getElementById('carousel-indicators');
+        
+        if(sliderItems.length > 0) {
+            sliderItems.forEach((item, index) => {
+                const isActive = index === 0 ? 'active' : '';
+                const indicator = document.createElement('button');
+                indicator.type = 'button';
+                indicator.dataset.bsTarget = '#hero-carousel';
+                indicator.dataset.bsSlideTo = index;
+                if(isActive) indicator.classList.add('active');
+                carouselIndicators.appendChild(indicator);
+
+                const slide = document.createElement('div');
+                slide.className = `carousel-item ${isActive}`;
+                slide.innerHTML = `
+                    <img src="${item.img || ''}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSIyMCIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiI+U2VtIEltYWdlbjwvdGV4dD48L3N2Zz4=';">
+                    <div class="carousel-overlay"><h5>${item.title}</h5></div>
+                `;
+                carouselInner.appendChild(slide);
+            });
+        } else {
+            document.getElementById('hero-carousel').innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#1a1a2e;border-radius:20px;"><h4 style="opacity:0.5;">Nenhum destaque</h4></div>`;
+        }
+
+        // CONTEÚDO DA HOME
         let html = '';
         if(cache.live.length) {
             html += `<div class="section-head"><h5>📡 Canais em destaque</h5></div><div class="h-scroll">`;
@@ -316,39 +407,48 @@ async function renderHome() {
             });
             html += `</div>`;
         }
-        if(cache.vod.length) {
+        if(hasVod) {
             html += `<div class="section-head"><h5>🎬 Filmes em destaque</h5></div><div class="h-scroll">`;
             cache.vod.slice(0, 10).forEach(s => {
                 html += `<div class="poster" onclick="playVod('${s.stream_id}', '${s.name}')"><div class="img-wrap">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div><div class="title">${s.name}</div></div>`;
             });
             html += `</div>`;
         }
-        if(cache.series.length) {
+        if(hasSeries) {
             html += `<div class="section-head"><h5>📺 Séries em destaque</h5></div><div class="h-scroll">`;
             cache.series.slice(0, 10).forEach(s => {
                 html += `<div class="poster"><div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div><div class="title">${s.name}</div></div>`;
             });
             html += `</div>`;
         }
-        homeDiv.innerHTML = html || '<p style="text-align:center;padding:40px;opacity:0.6;">Nenhum conteúdo.</p>';
+        document.getElementById('homeContent').innerHTML = html || '<p style="text-align:center;padding:40px;opacity:0.6;">Nenhum conteúdo.</p>';
+
     } catch(e) {
-        homeDiv.innerHTML = '<p style="text-align:center;padding:30px;opacity:0.6;color:#ff6b6b;">Erro ao carregar.</p>';
+        document.getElementById('homeContent').innerHTML = '<p style="text-align:center;padding:30px;opacity:0.6;color:#ff6b6b;">Erro ao carregar.</p>';
     }
 }
 
 /* =========================================================
-   ABAS COM CATEGORIAS DENTRO
+   ABAS COM CATEGORIAS (ESTILO MENU ORGANIZADO)
    ========================================================= */
+function buildCategoryChips(cats, currentId, onClick) {
+    let html = `<div class="cat-chip-wrapper"><span class="cat-chip active" data-id="all" onclick="onCatClick('all', this)">TODOS</span>`;
+    cats.slice(0, 15).forEach(c => {
+        html += `<span class="cat-chip" data-id="${c.category_id}" onclick="onCatClick('${c.category_id}', this)">${c.category_name}</span>`;
+    });
+    html += `</div>`;
+    return html;
+}
+
 async function renderLive() {
     const el = document.getElementById('view-live');
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
     if(!cache.cats.live) cache.cats.live = await api.call('get_live_categories') || [];
     if(!cache.live) cache.live = await api.call('get_live_streams') || [];
-    renderLiveView(el);
-}
-function renderLiveView(el) {
-    let html = `<div class="cat-chip-wrapper"><span class="cat-chip active" onclick="filterLive('all', this)">TODOS</span>`;
-    cache.cats.live.slice(0, 10).forEach(c => {
+    
+    let html = `<div class="cat-chip-wrapper">`;
+    html += `<span class="cat-chip active" onclick="filterLive('all', this)">TODOS</span>`;
+    cache.cats.live.slice(0, 15).forEach(c => {
         html += `<span class="cat-chip" onclick="filterLive('${c.category_id}', this)">${c.category_name}</span>`;
     });
     html += `</div><div id="live-list-content"></div>`;
@@ -382,11 +482,10 @@ async function renderVod() {
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
     if(!cache.cats.vod) cache.cats.vod = await api.call('get_vod_categories') || [];
     if(!cache.vod) cache.vod = await api.call('get_vod_streams') || [];
-    renderVodView(el);
-}
-function renderVodView(el) {
-    let html = `<div class="cat-chip-wrapper"><span class="cat-chip active" onclick="filterVod('all', this)">TODOS</span>`;
-    cache.cats.vod.slice(0, 10).forEach(c => {
+    
+    let html = `<div class="cat-chip-wrapper">`;
+    html += `<span class="cat-chip active" onclick="filterVod('all', this)">TODOS</span>`;
+    cache.cats.vod.slice(0, 15).forEach(c => {
         html += `<span class="cat-chip" onclick="filterVod('${c.category_id}', this)">${c.category_name}</span>`;
     });
     html += `</div><div id="vod-list-content"></div>`;
@@ -413,11 +512,10 @@ async function renderSeries() {
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
     if(!cache.cats.series) cache.cats.series = await api.call('get_series_categories') || [];
     if(!cache.series) cache.series = await api.call('get_series') || [];
-    renderSeriesView(el);
-}
-function renderSeriesView(el) {
-    let html = `<div class="cat-chip-wrapper"><span class="cat-chip active" onclick="filterSeries('all', this)">TODOS</span>`;
-    cache.cats.series.slice(0, 10).forEach(c => {
+    
+    let html = `<div class="cat-chip-wrapper">`;
+    html += `<span class="cat-chip active" onclick="filterSeries('all', this)">TODOS</span>`;
+    cache.cats.series.slice(0, 15).forEach(c => {
         html += `<span class="cat-chip" onclick="filterSeries('${c.category_id}', this)">${c.category_name}</span>`;
     });
     html += `</div><div id="series-list-content"></div>`;
@@ -474,7 +572,7 @@ async function renderInfo() {
 }
 
 /* =========================================================
-   FAVORITOS E PLAYER (Mecânica Profissional)
+   FAVORITOS E PLAYER (Mecânica Híbrida Corrigida)
    ========================================================= */
 function toggleFav(type, id, name, cover) {
     const idx = favorites.findIndex(f => f.id === id && f.type === type);
@@ -491,6 +589,46 @@ window.playFav = (id, name, type) => {
     if(type === 'vod') play(api.streamVod(id), name);
 };
 
+/* SISTEMA DE PLAYER MULTI-FORMATO (Baseado no Elas Merecem) */
+function detectType(url, ext){
+  const u=(url||'').toLowerCase().split('?')[0];
+  const e=normalizeExt(ext);
+  if(e==='m3u8'||e==='m3u'||u.endsWith('.m3u8')||u.endsWith('.m3u'))return 'hls';
+  if(e==='ts'||e==='mts'||e==='m2ts'||e==='mpegts'||u.endsWith('.ts')||u.endsWith('.mts')||u.endsWith('.m2ts'))return 'mpegts';
+  if(e==='mp4'||e==='m4v'||e==='mov'||u.endsWith('.mp4')||u.endsWith('.m4v')||u.endsWith('.mov'))return 'mp4';
+  if(e==='mkv'||u.endsWith('.mkv'))return 'mkv';
+  if(e==='webm'||u.endsWith('.webm'))return 'webm';
+  return 'native';
+}
+function normalizeExt(ext){return (ext||'').toLowerCase().replace(/^\./,'')}
+function replaceUrlExt(url,ext){
+  const [base,query='']=(url||'').split('?');
+  const next=base.match(/\.[^/.]+$/)?base.replace(/\.[^/.]+$/,'.'+ext):base+'.'+ext;
+  return next+(query?'?'+query:'');
+}
+function sourceMime(type){
+  if(type==='hls')return 'application/x-mpegURL';
+  if(type==='mp4')return 'video/mp4';
+  if(type==='webm')return 'video/webm';
+  if(type==='mpegts')return 'video/mp2t';
+  return '';
+}
+function buildSourceQueue(url,type,ext,kind){
+  const queue=[];
+  const add=(src,t)=>{if(src&&!queue.some(x=>x.src===src)){queue.push({src,type:t,mime:sourceMime(t)})}};
+  add(url,type);
+  const e=normalizeExt(ext);
+  const fallbacks=kind==='live'?['m3u8','ts']:['mp4','mkv','ts','m3u8'];
+  fallbacks.forEach(f=>{if(f!==e)add(replaceUrlExt(url,f),detectType(url,f))});
+  return queue;
+}
+function resetVideoJs(){
+  if(mpegtsInstance){try{mpegtsInstance.pause();mpegtsInstance.unload();mpegtsInstance.detachMediaElement();mpegtsInstance.destroy()}catch{}mpegtsInstance=null}
+  if(videojsPlayer){try{videojsPlayer.pause();videojsPlayer.dispose()}catch{}videojsPlayer=null}
+  const wrap=document.querySelector('#playerModal .player-wrap');
+  if(wrap)wrap.innerHTML='<video id="videoEl" class="video-js vjs-big-play-centered" controls preload="auto" playsinline></video>';
+}
+
 function play(url, title) {
     if(videojsPlayer) { videojsPlayer.dispose(); videojsPlayer = null; }
     if(mpegtsInstance) { mpegtsInstance.destroy(); mpegtsInstance = null; }
@@ -498,13 +636,20 @@ function play(url, title) {
     $('#playerTitle').textContent = title || 'Tocando';
     $('#playerSubtitle').textContent = '';
     $('#playerExtra').innerHTML = '';
-
+    
+    // Força o fechamento de qualquer outro modal e abre o player
+    const modals = document.querySelectorAll('.modal.show');
+    modals.forEach(m => { const inst = bootstrap.Modal.getInstance(m); if(inst && m.id !== 'playerModal') inst.hide(); });
     new bootstrap.Modal('#playerModal').show();
     resetVideoJs();
-    
+
+    const type = detectType(url, 'm3u8');
+    const sources = buildSourceQueue(url, type, 'm3u8', 'live');
+    let sourceIndex = 0;
+
     setTimeout(() => {
         const player = videojs('videoEl', {
-            controls: true, autoplay: true, fluid: true, responsive: true,
+            controls: true, autoplay: true, fluid: true, responsive: true, liveui: true,
             html5: { vhs: { overrideNative: false, enableLowInitialPlaylist: true } }
         });
         videojsPlayer = player;
@@ -513,32 +658,156 @@ function play(url, title) {
             const mediaEl = player.tech({ IWillNotUseThisInPlugins: true }).el();
             const canMpegTs = () => window.mpegts && mpegts.getFeatureList && (mpegts.getFeatureList().msePlayback || mpegts.getFeatureList().mseLivePlayback);
             
-            const urlLower = url.toLowerCase();
-            const isMpegTs = urlLower.endsWith('.ts') || urlLower.endsWith('.m3u8') === false;
+            const tryNextSource = () => {
+                if(mpegtsInstance) { mpegtsInstance.destroy(); mpegtsInstance = null; }
+                const item = sources[sourceIndex] || { src: url, type: 'hls', mime: sourceMime('hls') };
+                
+                if (item.type === 'mpegts' && canMpegTs()) {
+                    mpegtsInstance = mpegts.createPlayer({ type: 'mpegts', isLive: true, url: item.src }, { enableWorker: true, lazyLoad: false });
+                    mpegtsInstance.attachMediaElement(mediaEl);
+                    mpegtsInstance.load();
+                    mpegtsInstance.play();
+                } else {
+                    player.src({ src: item.src, type: item.mime || 'application/x-mpegURL' });
+                    player.load();
+                    player.play().catch(() => {});
+                }
+            };
             
-            if (isMpegTs && canMpegTs()) {
-                mpegtsInstance = mpegts.createPlayer({ type: 'mpegts', isLive: true, url: url });
-                mpegtsInstance.attachMediaElement(mediaEl);
-                mpegtsInstance.load();
-                mpegtsInstance.play();
-            } else {
+            player.on('error', () => {
+                if (sourceIndex < sources.length - 1) { sourceIndex++; tryNextSource(); return; }
+                // Fallback final: tenta o link original
                 player.src({ src: url, type: 'application/x-mpegURL' });
                 player.load();
-                player.play();
-            }
+            });
+            tryNextSource();
         });
     }, 400);
-}
-
-function resetVideoJs() {
-    const wrap = document.querySelector('#playerModal .player-wrap');
-    if(wrap) wrap.innerHTML = '<video id="videoEl" class="video-js vjs-big-play-centered" controls preload="auto" playsinline></video>';
 }
 
 // Botões do Player
 $('#btnBack10').addEventListener('click',()=>{ if(videojsPlayer) videojsPlayer.currentTime(Math.max(0, videojsPlayer.currentTime()-10)); });
 $('#btnFwd10').addEventListener('click',()=>{ if(videojsPlayer) videojsPlayer.currentTime(videojsPlayer.currentTime()+10); });
 $('#btnFs').addEventListener('click',()=>{ if(videojsPlayer) { if(videojsPlayer.isFullscreen()) videojsPlayer.exitFullscreen(); else videojsPlayer.requestFullscreen(); } });
+
+/* =========================================================
+   SISTEMA DE SÉRIES COM EPISÓDIOS (Baseado no Master Play)
+   ========================================================= */
+window.abrirSerie = (id) => {
+    // Encontra a série no cache
+    let s = cache.series.find(x => String(x.series_id) === String(id));
+    if(!s) s = cache.series.find(x => String(x.stream_id) === String(id));
+    if(!s) { alert('Série não encontrada'); return; }
+
+    const modalTitle = document.getElementById('seriesModalTitle');
+    const modalBody = document.getElementById('seriesModalBody');
+    modalTitle.textContent = s.name || 'Série';
+    modalBody.innerHTML = `<div class="text-center p-3"><i class="bi bi-arrow-repeat me-2"></i>Carregando episódios...</div>`;
+    
+    new bootstrap.Modal('#seriesModal').show();
+
+    api('get_series_info', { series_id: s.series_id })
+        .then(data => {
+            if(!data || !data.episodes) {
+                modalBody.innerHTML = `<div class="text-center p-3 text-muted">Nenhum episódio disponível.</div>`;
+                return;
+            }
+            
+            let seasons = [];
+            let episodesMap = {};
+            const epData = data.episodes;
+            
+            if(Array.isArray(epData)) {
+                epData.forEach(ep => {
+                    const seasonNum = ep.season || '1';
+                    if(!episodesMap[seasonNum]) episodesMap[seasonNum] = [];
+                    episodesMap[seasonNum].push(ep);
+                });
+                seasons = Object.keys(episodesMap).sort((a,b) => Number(a)-Number(b));
+            } else {
+                seasons = Object.keys(epData).sort((a,b) => Number(a)-Number(b));
+                episodesMap = epData;
+            }
+            
+            if(seasons.length === 0) {
+                modalBody.innerHTML = `<div class="text-center p-3 text-muted">Nenhuma temporada disponível.</div>`;
+                return;
+            }
+            
+            let html = `
+                <div class="d-flex gap-2 flex-wrap mb-3">
+                    <select class="form-select" id="seasonSelect" style="max-width:200px;background:#1a1a1a;border:1px solid var(--glass-border);color:#fff;border-radius:10px;">
+                        ${seasons.map(n => `<option value="${n}">Temporada ${n}</option>`).join('')}
+                    </select>
+                    <select class="form-select" id="episodeSelect" style="max-width:200px;background:#1a1a1a;border:1px solid var(--glass-border);color:#fff;border-radius:10px;"></select>
+                </div>
+                <button class="btn btn-primary w-100" id="watchEpisodeBtn" style="background:var(--primary-color);border:none;border-radius:10px;font-weight:bold;padding:10px;">▶ Assistir Episódio</button>
+            `;
+            modalBody.innerHTML = html;
+            
+            const fillEpisodes = () => {
+                const n = document.getElementById('seasonSelect').value;
+                const eps = episodesMap[n] || [];
+                const epSel = document.getElementById('episodeSelect');
+                epSel.innerHTML = eps.map((e, i) => 
+                    `<option value="${i}">${e.episode_num || (i+1)} - ${e.title || 'Episódio'}</option>`
+                ).join('');
+            };
+            
+            fillEpisodes();
+            document.getElementById('seasonSelect').onchange = fillEpisodes;
+            
+            document.getElementById('watchEpisodeBtn').onclick = () => {
+                const n = document.getElementById('seasonSelect').value;
+                const idx = Number(document.getElementById('episodeSelect').value);
+                const e = episodesMap[n][idx];
+                if(e) {
+                    const ext = e.container_extension || 'mp4';
+                    const url = api.streamEp(e.id, ext);
+                    // Fecha o modal de séries e abre o player
+                    bootstrap.Modal.getInstance('#seriesModal').hide();
+                    play(url, `${s.name} - ${e.title || 'Episódio'}`);
+                }
+            };
+        })
+        .catch(err => {
+            modalBody.innerHTML = `<div class="text-center p-3 text-danger">Erro: ${err.message}</div>`;
+        });
+};
+
+// Sobrescreve o clique no poster de série para abrir o modal de episódios
+const originalRenderSeries = renderSeries;
+renderSeries = async function() {
+    const el = document.getElementById('view-series');
+    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
+    if(!cache.cats.series) cache.cats.series = await api.call('get_series_categories') || [];
+    if(!cache.series) cache.series = await api.call('get_series') || [];
+    
+    let html = `<div class="cat-chip-wrapper">`;
+    html += `<span class="cat-chip active" onclick="filterSeries('all', this)">TODOS</span>`;
+    cache.cats.series.slice(0, 15).forEach(c => {
+        html += `<span class="cat-chip" onclick="filterSeries('${c.category_id}', this)">${c.category_name}</span>`;
+    });
+    html += `</div><div id="series-list-content"></div>`;
+    el.innerHTML = html;
+    filterSeries('all', el.querySelector('.cat-chip.active'));
+};
+
+// Substitui a função de clique para abrir o modal de séries
+window.filterSeries = (catId, el) => {
+    $$('.cat-chip').forEach(c => c.classList.remove('active'));
+    if(el) el.classList.add('active');
+    let items = catId === 'all' ? cache.series : cache.series.filter(s => String(s.category_id) === String(catId));
+    const container = document.getElementById('series-list-content');
+    if(!items.length) { container.innerHTML = '<p style="padding:20px;opacity:0.6;">Nenhuma série.</p>'; return; }
+    let html = '<div class="poster-grid">';
+    items.slice(0, 30).forEach(s => {
+        // O clique agora chama abrirSerie com o ID correto
+        html += `<div class="poster" onclick="abrirSerie('${s.series_id}')"><div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div><div class="title">${s.name}</div></div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+};
 </script>
 </body>
 </html>
