@@ -9,9 +9,13 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/video.js@8.17.4/dist/video-js.min.css" />
+
+<!-- BIBLIOTECAS DO 'MASTER PLAY' E 'ELAS MERECEM' -->
 <script src="https://cdn.jsdelivr.net/npm/video.js@8.17.4/dist/video.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <style>
 :root {
   --primary-color: {{primary_color}};
@@ -94,7 +98,7 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 .app-header-top{display:flex;align-items:center;justify-content:space-between;padding:15px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border-bottom:1px solid var(--glass-border);position:sticky;top:0;z-index:50;}
 .app-header-top h1{font-size:1.2rem;font-weight:800;color:var(--primary-color);}
 
-/* SLIDER DE DESTAQUE (PUXA FILMES E SÉRIES) */
+/* SLIDER DE DESTAQUE */
 #hero-carousel{width:100%;aspect-ratio:16/9;border-radius:20px;overflow:hidden;margin-bottom:15px;position:relative;background:var(--bg-app);}
 .carousel-item{height:100%;width:100%;position:relative;}
 .carousel-item img{width:100%;height:100%;object-fit:cover;}
@@ -117,12 +121,13 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 .section-head{display:flex;justify-content:space-between;align-items:center;margin:15px 0 10px;}
 .section-head h5{font-weight:600;color:var(--primary-color);margin:0;}
 
-/* CHIPS DE CATEGORIA (ORGANIZADOS E FILTRÁVEIS) */
-.cat-chip-wrapper{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0;border-bottom:1px solid var(--glass-border);margin-bottom:15px;}
+/* CHIPS DE CATEGORIA */
+.cat-chip-wrapper{display:flex;flex-wrap:nowrap;gap:8px;padding:10px 0 15px;border-bottom:1px solid var(--glass-border);margin-bottom:15px;overflow-x:auto;white-space:nowrap;}
+.cat-chip-wrapper::-webkit-scrollbar{display:none;}
 .cat-chip{display:inline-block;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:0.2s;color:#fff;}
 .cat-chip:hover,.cat-chip.active{background:var(--primary-color);color:#fff;border-color:var(--primary-color);}
 
-/* PLAYER MODAL */
+/* PLAYER MODAL (LAYOUT PROFISSIONAL) */
 .player-wrap{position:relative;background:#000;border-radius:18px;overflow:hidden;aspect-ratio:16/9;box-shadow:0 0 40px rgba(255,255,255,.15);}
 .player-wrap video{width:100%;height:100%;display:block;background:#000;}
 .modal-content.player-modal{background:rgba(0,0,0,0.95);border:1px solid var(--glass-border);color:#fff;border-radius:22px;}
@@ -154,7 +159,7 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
     <div id="view-info" class="view"></div>
 </div>
 
-<!-- PLAYER MODAL (Mecânica Híbrida) -->
+<!-- PLAYER MODAL -->
 <div class="modal fade" id="playerModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-xl">
     <div class="modal-content player-modal">
@@ -180,7 +185,7 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
   </div>
 </div>
 
-<!-- MODAL DE SÉRIES (Dropdown de Temporadas e Episódios) -->
+<!-- MODAL DE SÉRIES -->
 <div class="modal fade" id="seriesModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content player-modal">
@@ -204,7 +209,6 @@ const CARD_STYLE = "{{card_choice}}";
 
 let SERVER, USER, PASS;
 let videojsPlayer=null, mpegtsInstance=null;
-let currentHls = null;
 const favorites = JSON.parse(localStorage.getItem('favs') || '[]');
 const cache = { live: null, vod: null, series: null, userInfo: null, cats: { live: null, vod: null, series: null } };
 
@@ -214,20 +218,17 @@ const cache = { live: null, vod: null, series: null, userInfo: null, cats: { liv
 function performLogout() {
     if(confirm('Deseja realmente sair?')) {
         if(videojsPlayer) { videojsPlayer.dispose(); videojsPlayer = null; }
-        if(currentHls) { currentHls.destroy(); currentHls = null; }
         if(mpegtsInstance) { mpegtsInstance.destroy(); mpegtsInstance = null; }
         localStorage.clear(); 
-        // Limpa o cache do App
         cache.live = null; cache.vod = null; cache.series = null;
         cache.cats.live = null; cache.cats.vod = null; cache.cats.series = null;
-        // Reseta visualmente o app e volta para o Login
+
         document.getElementById('app').style.display = 'none';
         document.getElementById('splash-screen').style.display = 'none';
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('inputServer').value = '';
         document.getElementById('inputUser').value = '';
         document.getElementById('inputPass').value = '';
-        // Fecha qualquer modal aberto
         const modals = document.querySelectorAll('.modal.show');
         modals.forEach(m => { const inst = bootstrap.Modal.getInstance(m); if(inst) inst.hide(); });
     }
@@ -259,7 +260,7 @@ const api = {
         return r.json();
     },
     streamLive(id) { return SERVER + '/live/' + USER + '/' + PASS + '/' + id + '.m3u8'; },
-    streamVod(id, ext='mp4') { return SERVER + '/movie/' + USER + '/' + PASS + '/' + id + '.' + ext; },
+    streamVod(id) { return SERVER + '/movie/' + USER + '/' + PASS + '/' + id + '.mp4'; },
     streamEp(id, ext='mp4') { return SERVER + '/series/' + USER + '/' + PASS + '/' + id + '.' + ext; }
 };
 
@@ -303,30 +304,12 @@ function mountApp() {
     document.getElementById('menu-container').innerHTML = menuHTML;
     document.body.classList.add(CARD_STYLE === 'fluido' ? 'card-fluido' : 'card-padrao');
 
-    // FORÇA A ABA HOME A SER A PRIMEIRA A CARREGAR
-    document.querySelector('.nav-item[data-target="home"]')?.classList.add('active');
-    document.getElementById('view-home').classList.add('active');
-    renderHome();
-
-    $$('.nav-item').forEach(b => {
-        b.addEventListener('click', function() {
-            $$('.nav-item').forEach(n => n.classList.remove('active'));
-            $$('.view').forEach(v => v.classList.remove('active'));
-            this.classList.add('active');
-            const target = this.dataset.target;
-            document.getElementById('view-' + target).classList.add('active');
-            if(target === 'home') renderHome();
-            if(target === 'live') renderLive();
-            if(target === 'vod') renderVod();
-            if(target === 'series') renderSeries();
-            if(target === 'favorites') renderFavorites();
-            if(target === 'info') renderInfo();
-        });
-    });
+    // Força a aba HOME a abrir
+    document.querySelector('.nav-item[data-target="home"]')?.click();
 }
 
 /* =========================================================
-   TELA INICIAL (COM SLIDER RECUPERADO)
+   TELA INICIAL
    ========================================================= */
 async function renderHome() {
     const homeDiv = document.getElementById('view-home');
@@ -365,13 +348,10 @@ async function renderHome() {
         if(!cache.cats.vod) cache.cats.vod = vodCats || [];
         if(!cache.cats.series) cache.cats.series = seriesCats || [];
 
-        const hasVod = cache.vod.length > 0;
-        const hasSeries = cache.series.length > 0;
-
-        // SLIDER MONTADO COM FILMES E SÉRIES
+        // Slider
         let sliderItems = [];
-        if(hasVod) cache.vod.slice(0, 5).forEach(s => sliderItems.push({img: s.stream_icon, title: s.name}));
-        if(hasSeries) cache.series.slice(0, 5).forEach(s => sliderItems.push({img: s.cover, title: s.name}));
+        cache.vod.slice(0, 5).forEach(s => sliderItems.push({img: s.stream_icon, title: s.name}));
+        cache.series.slice(0, 5).forEach(s => sliderItems.push({img: s.cover, title: s.name}));
 
         const carouselInner = document.getElementById('carousel-inner');
         const carouselIndicators = document.getElementById('carousel-indicators');
@@ -394,11 +374,9 @@ async function renderHome() {
                 `;
                 carouselInner.appendChild(slide);
             });
-        } else {
-            document.getElementById('hero-carousel').innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#1a1a2e;border-radius:20px;"><h4 style="opacity:0.5;">Nenhum destaque</h4></div>`;
         }
 
-        // CONTEÚDO DA HOME
+        // Listas
         let html = '';
         if(cache.live.length) {
             html += `<div class="section-head"><h5>📡 Canais em destaque</h5></div><div class="h-scroll">`;
@@ -407,17 +385,17 @@ async function renderHome() {
             });
             html += `</div>`;
         }
-        if(hasVod) {
+        if(cache.vod.length) {
             html += `<div class="section-head"><h5>🎬 Filmes em destaque</h5></div><div class="h-scroll">`;
             cache.vod.slice(0, 10).forEach(s => {
                 html += `<div class="poster" onclick="playVod('${s.stream_id}', '${s.name}')"><div class="img-wrap">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div><div class="title">${s.name}</div></div>`;
             });
             html += `</div>`;
         }
-        if(hasSeries) {
+        if(cache.series.length) {
             html += `<div class="section-head"><h5>📺 Séries em destaque</h5></div><div class="h-scroll">`;
             cache.series.slice(0, 10).forEach(s => {
-                html += `<div class="poster"><div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div><div class="title">${s.name}</div></div>`;
+                html += `<div class="poster" onclick="abrirSerie('${s.series_id}')"><div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div><div class="title">${s.name}</div></div>`;
             });
             html += `</div>`;
         }
@@ -429,17 +407,8 @@ async function renderHome() {
 }
 
 /* =========================================================
-   ABAS COM CATEGORIAS (ESTILO MENU ORGANIZADO)
+   ABAS COM CATEGORIAS
    ========================================================= */
-function buildCategoryChips(cats, currentId, onClick) {
-    let html = `<div class="cat-chip-wrapper"><span class="cat-chip active" data-id="all" onclick="onCatClick('all', this)">TODOS</span>`;
-    cats.slice(0, 15).forEach(c => {
-        html += `<span class="cat-chip" data-id="${c.category_id}" onclick="onCatClick('${c.category_id}', this)">${c.category_name}</span>`;
-    });
-    html += `</div>`;
-    return html;
-}
-
 async function renderLive() {
     const el = document.getElementById('view-live');
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
@@ -531,7 +500,7 @@ window.filterSeries = (catId, el) => {
     if(!items.length) { container.innerHTML = '<p style="padding:20px;opacity:0.6;">Nenhuma série.</p>'; return; }
     let html = '<div class="poster-grid">';
     items.slice(0, 30).forEach(s => {
-        html += `<div class="poster"><div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div><div class="title">${s.name}</div></div>`;
+        html += `<div class="poster" onclick="abrirSerie('${s.series_id}')"><div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div><div class="title">${s.name}</div></div>`;
     });
     html += '</div>';
     container.innerHTML = html;
@@ -572,7 +541,7 @@ async function renderInfo() {
 }
 
 /* =========================================================
-   FAVORITOS E PLAYER (Mecânica Híbrida Corrigida)
+   FAVORITOS
    ========================================================= */
 function toggleFav(type, id, name, cover) {
     const idx = favorites.findIndex(f => f.id === id && f.type === type);
@@ -589,57 +558,58 @@ window.playFav = (id, name, type) => {
     if(type === 'vod') play(api.streamVod(id), name);
 };
 
-/* SISTEMA DE PLAYER MULTI-FORMATO (Baseado no Elas Merecem) */
-function detectType(url, ext){
-  const u=(url||'').toLowerCase().split('?')[0];
-  const e=normalizeExt(ext);
-  if(e==='m3u8'||e==='m3u'||u.endsWith('.m3u8')||u.endsWith('.m3u'))return 'hls';
-  if(e==='ts'||e==='mts'||e==='m2ts'||e==='mpegts'||u.endsWith('.ts')||u.endsWith('.mts')||u.endsWith('.m2ts'))return 'mpegts';
-  if(e==='mp4'||e==='m4v'||e==='mov'||u.endsWith('.mp4')||u.endsWith('.m4v')||u.endsWith('.mov'))return 'mp4';
-  if(e==='mkv'||u.endsWith('.mkv'))return 'mkv';
-  if(e==='webm'||u.endsWith('.webm'))return 'webm';
-  return 'native';
+/* =========================================================
+   MECÂNICA DO PLAYER (USANDO O CÓDIGO DO 'ELAS MERECEM')
+   ========================================================= */
+function detectType(url, ext) {
+    const u = (url || '').toLowerCase().split('?')[0];
+    const e = normalizeExt(ext);
+    if (e === 'm3u8' || e === 'm3u' || u.endsWith('.m3u8') || u.endsWith('.m3u')) return 'hls';
+    if (e === 'ts' || e === 'mts' || e === 'm2ts' || e === 'mpegts' || u.endsWith('.ts') || u.endsWith('.mts') || u.endsWith('.m2ts')) return 'mpegts';
+    if (e === 'mp4' || e === 'm4v' || e === 'mov' || u.endsWith('.mp4') || u.endsWith('.m4v') || u.endsWith('.mov')) return 'mp4';
+    if (e === 'mkv' || u.endsWith('.mkv')) return 'mkv';
+    if (e === 'webm' || u.endsWith('.webm')) return 'webm';
+    return 'native';
 }
-function normalizeExt(ext){return (ext||'').toLowerCase().replace(/^\./,'')}
-function replaceUrlExt(url,ext){
-  const [base,query='']=(url||'').split('?');
-  const next=base.match(/\.[^/.]+$/)?base.replace(/\.[^/.]+$/,'.'+ext):base+'.'+ext;
-  return next+(query?'?'+query:'');
+function normalizeExt(ext){return (ext || '').toLowerCase().replace(/^\./, '');}
+function replaceUrlExt(url, ext) {
+    const [base, query = ''] = (url || '').split('?');
+    const next = base.match(/\.[^/.]+$/) ? base.replace(/\.[^/.]+$/, '.' + ext) : base + '.' + ext;
+    return next + (query ? '?' + query : '');
 }
-function sourceMime(type){
-  if(type==='hls')return 'application/x-mpegURL';
-  if(type==='mp4')return 'video/mp4';
-  if(type==='webm')return 'video/webm';
-  if(type==='mpegts')return 'video/mp2t';
-  return '';
+function sourceMime(type) {
+    if (type === 'hls') return 'application/x-mpegURL';
+    if (type === 'mp4') return 'video/mp4';
+    if (type === 'webm') return 'video/webm';
+    if (type === 'mpegts') return 'video/mp2t';
+    return '';
 }
-function buildSourceQueue(url,type,ext,kind){
-  const queue=[];
-  const add=(src,t)=>{if(src&&!queue.some(x=>x.src===src)){queue.push({src,type:t,mime:sourceMime(t)})}};
-  add(url,type);
-  const e=normalizeExt(ext);
-  const fallbacks=kind==='live'?['m3u8','ts']:['mp4','mkv','ts','m3u8'];
-  fallbacks.forEach(f=>{if(f!==e)add(replaceUrlExt(url,f),detectType(url,f))});
-  return queue;
+function buildSourceQueue(url, type, ext, kind) {
+    const queue = [];
+    const add = (src, t) => { if (src && !queue.some(x => x.src === src)) { queue.push({ src, type: t, mime: sourceMime(t) }); } };
+    add(url, type);
+    const e = normalizeExt(ext);
+    const fallbacks = kind === 'live' ? ['m3u8', 'ts'] : ['mp4', 'mkv', 'ts', 'm3u8'];
+    fallbacks.forEach(f => { if (f !== e) add(replaceUrlExt(url, f), detectType(url, f)); });
+    return queue;
 }
-function resetVideoJs(){
-  if(mpegtsInstance){try{mpegtsInstance.pause();mpegtsInstance.unload();mpegtsInstance.detachMediaElement();mpegtsInstance.destroy()}catch{}mpegtsInstance=null}
-  if(videojsPlayer){try{videojsPlayer.pause();videojsPlayer.dispose()}catch{}videojsPlayer=null}
-  const wrap=document.querySelector('#playerModal .player-wrap');
-  if(wrap)wrap.innerHTML='<video id="videoEl" class="video-js vjs-big-play-centered" controls preload="auto" playsinline></video>';
+function resetVideoJs() {
+    if (mpegtsInstance) { try { mpegtsInstance.pause(); mpegtsInstance.unload(); mpegtsInstance.detachMediaElement(); mpegtsInstance.destroy(); } catch {} mpegtsInstance = null; }
+    if (videojsPlayer) { try { videojsPlayer.pause(); videojsPlayer.dispose(); } catch {} videojsPlayer = null; }
+    const wrap = document.querySelector('#playerModal .player-wrap');
+    if (wrap) wrap.innerHTML = '<video id="videoEl" class="video-js vjs-big-play-centered" controls preload="auto" playsinline></video>';
 }
 
 function play(url, title) {
-    if(videojsPlayer) { videojsPlayer.dispose(); videojsPlayer = null; }
-    if(mpegtsInstance) { mpegtsInstance.destroy(); mpegtsInstance = null; }
-    
+    if (videojsPlayer) { videojsPlayer.dispose(); videojsPlayer = null; }
+    if (mpegtsInstance) { mpegtsInstance.destroy(); mpegtsInstance = null; }
+
     $('#playerTitle').textContent = title || 'Tocando';
     $('#playerSubtitle').textContent = '';
     $('#playerExtra').innerHTML = '';
-    
-    // Força o fechamento de qualquer outro modal e abre o player
+
     const modals = document.querySelectorAll('.modal.show');
-    modals.forEach(m => { const inst = bootstrap.Modal.getInstance(m); if(inst && m.id !== 'playerModal') inst.hide(); });
+    modals.forEach(m => { const inst = bootstrap.Modal.getInstance(m); if (inst && m.id !== 'playerModal') inst.hide(); });
     new bootstrap.Modal('#playerModal').show();
     resetVideoJs();
 
@@ -653,15 +623,15 @@ function play(url, title) {
             html5: { vhs: { overrideNative: false, enableLowInitialPlaylist: true } }
         });
         videojsPlayer = player;
-        
+
         player.ready(() => {
             const mediaEl = player.tech({ IWillNotUseThisInPlugins: true }).el();
             const canMpegTs = () => window.mpegts && mpegts.getFeatureList && (mpegts.getFeatureList().msePlayback || mpegts.getFeatureList().mseLivePlayback);
-            
+
             const tryNextSource = () => {
-                if(mpegtsInstance) { mpegtsInstance.destroy(); mpegtsInstance = null; }
+                if (mpegtsInstance) { mpegtsInstance.destroy(); mpegtsInstance = null; }
                 const item = sources[sourceIndex] || { src: url, type: 'hls', mime: sourceMime('hls') };
-                
+
                 if (item.type === 'mpegts' && canMpegTs()) {
                     mpegtsInstance = mpegts.createPlayer({ type: 'mpegts', isLive: true, url: item.src }, { enableWorker: true, lazyLoad: false });
                     mpegtsInstance.attachMediaElement(mediaEl);
@@ -673,10 +643,9 @@ function play(url, title) {
                     player.play().catch(() => {});
                 }
             };
-            
+
             player.on('error', () => {
                 if (sourceIndex < sources.length - 1) { sourceIndex++; tryNextSource(); return; }
-                // Fallback final: tenta o link original
                 player.src({ src: url, type: 'application/x-mpegURL' });
                 player.load();
             });
@@ -685,55 +654,49 @@ function play(url, title) {
     }, 400);
 }
 
-// Botões do Player
-$('#btnBack10').addEventListener('click',()=>{ if(videojsPlayer) videojsPlayer.currentTime(Math.max(0, videojsPlayer.currentTime()-10)); });
-$('#btnFwd10').addEventListener('click',()=>{ if(videojsPlayer) videojsPlayer.currentTime(videojsPlayer.currentTime()+10); });
-$('#btnFs').addEventListener('click',()=>{ if(videojsPlayer) { if(videojsPlayer.isFullscreen()) videojsPlayer.exitFullscreen(); else videojsPlayer.requestFullscreen(); } });
-
 /* =========================================================
-   SISTEMA DE SÉRIES COM EPISÓDIOS (Baseado no Master Play)
+   MECÂNICA DE SÉRIES (USANDO O CÓDIGO DO 'MASTER PLAY')
    ========================================================= */
 window.abrirSerie = (id) => {
-    // Encontra a série no cache
     let s = cache.series.find(x => String(x.series_id) === String(id));
-    if(!s) s = cache.series.find(x => String(x.stream_id) === String(id));
-    if(!s) { alert('Série não encontrada'); return; }
+    if (!s) s = cache.series.find(x => String(x.stream_id) === String(id));
+    if (!s) { alert('Série não encontrada'); return; }
 
     const modalTitle = document.getElementById('seriesModalTitle');
     const modalBody = document.getElementById('seriesModalBody');
     modalTitle.textContent = s.name || 'Série';
     modalBody.innerHTML = `<div class="text-center p-3"><i class="bi bi-arrow-repeat me-2"></i>Carregando episódios...</div>`;
-    
+
     new bootstrap.Modal('#seriesModal').show();
 
     api('get_series_info', { series_id: s.series_id })
         .then(data => {
-            if(!data || !data.episodes) {
+            if (!data || !data.episodes) {
                 modalBody.innerHTML = `<div class="text-center p-3 text-muted">Nenhum episódio disponível.</div>`;
                 return;
             }
-            
+
             let seasons = [];
             let episodesMap = {};
             const epData = data.episodes;
-            
-            if(Array.isArray(epData)) {
+
+            if (Array.isArray(epData)) {
                 epData.forEach(ep => {
                     const seasonNum = ep.season || '1';
-                    if(!episodesMap[seasonNum]) episodesMap[seasonNum] = [];
+                    if (!episodesMap[seasonNum]) episodesMap[seasonNum] = [];
                     episodesMap[seasonNum].push(ep);
                 });
-                seasons = Object.keys(episodesMap).sort((a,b) => Number(a)-Number(b));
+                seasons = Object.keys(episodesMap).sort((a, b) => Number(a) - Number(b));
             } else {
-                seasons = Object.keys(epData).sort((a,b) => Number(a)-Number(b));
+                seasons = Object.keys(epData).sort((a, b) => Number(a) - Number(b));
                 episodesMap = epData;
             }
-            
-            if(seasons.length === 0) {
+
+            if (seasons.length === 0) {
                 modalBody.innerHTML = `<div class="text-center p-3 text-muted">Nenhuma temporada disponível.</div>`;
                 return;
             }
-            
+
             let html = `
                 <div class="d-flex gap-2 flex-wrap mb-3">
                     <select class="form-select" id="seasonSelect" style="max-width:200px;background:#1a1a1a;border:1px solid var(--glass-border);color:#fff;border-radius:10px;">
@@ -744,7 +707,7 @@ window.abrirSerie = (id) => {
                 <button class="btn btn-primary w-100" id="watchEpisodeBtn" style="background:var(--primary-color);border:none;border-radius:10px;font-weight:bold;padding:10px;">▶ Assistir Episódio</button>
             `;
             modalBody.innerHTML = html;
-            
+
             const fillEpisodes = () => {
                 const n = document.getElementById('seasonSelect').value;
                 const eps = episodesMap[n] || [];
@@ -753,18 +716,17 @@ window.abrirSerie = (id) => {
                     `<option value="${i}">${e.episode_num || (i+1)} - ${e.title || 'Episódio'}</option>`
                 ).join('');
             };
-            
+
             fillEpisodes();
             document.getElementById('seasonSelect').onchange = fillEpisodes;
-            
+
             document.getElementById('watchEpisodeBtn').onclick = () => {
                 const n = document.getElementById('seasonSelect').value;
                 const idx = Number(document.getElementById('episodeSelect').value);
                 const e = episodesMap[n][idx];
-                if(e) {
+                if (e) {
                     const ext = e.container_extension || 'mp4';
                     const url = api.streamEp(e.id, ext);
-                    // Fecha o modal de séries e abre o player
                     bootstrap.Modal.getInstance('#seriesModal').hide();
                     play(url, `${s.name} - ${e.title || 'Episódio'}`);
                 }
@@ -775,39 +737,10 @@ window.abrirSerie = (id) => {
         });
 };
 
-// Sobrescreve o clique no poster de série para abrir o modal de episódios
-const originalRenderSeries = renderSeries;
-renderSeries = async function() {
-    const el = document.getElementById('view-series');
-    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
-    if(!cache.cats.series) cache.cats.series = await api.call('get_series_categories') || [];
-    if(!cache.series) cache.series = await api.call('get_series') || [];
-    
-    let html = `<div class="cat-chip-wrapper">`;
-    html += `<span class="cat-chip active" onclick="filterSeries('all', this)">TODOS</span>`;
-    cache.cats.series.slice(0, 15).forEach(c => {
-        html += `<span class="cat-chip" onclick="filterSeries('${c.category_id}', this)">${c.category_name}</span>`;
-    });
-    html += `</div><div id="series-list-content"></div>`;
-    el.innerHTML = html;
-    filterSeries('all', el.querySelector('.cat-chip.active'));
-};
-
-// Substitui a função de clique para abrir o modal de séries
-window.filterSeries = (catId, el) => {
-    $$('.cat-chip').forEach(c => c.classList.remove('active'));
-    if(el) el.classList.add('active');
-    let items = catId === 'all' ? cache.series : cache.series.filter(s => String(s.category_id) === String(catId));
-    const container = document.getElementById('series-list-content');
-    if(!items.length) { container.innerHTML = '<p style="padding:20px;opacity:0.6;">Nenhuma série.</p>'; return; }
-    let html = '<div class="poster-grid">';
-    items.slice(0, 30).forEach(s => {
-        // O clique agora chama abrirSerie com o ID correto
-        html += `<div class="poster" onclick="abrirSerie('${s.series_id}')"><div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div><div class="title">${s.name}</div></div>`;
-    });
-    html += '</div>';
-    container.innerHTML = html;
-};
+// Botões do Player (Para garantir que funcionem)
+$('#btnBack10').addEventListener('click',()=>{ if(videojsPlayer) videojsPlayer.currentTime(Math.max(0, videojsPlayer.currentTime()-10)); });
+$('#btnFwd10').addEventListener('click',()=>{ if(videojsPlayer) videojsPlayer.currentTime(videojsPlayer.currentTime()+10); });
+$('#btnFs').addEventListener('click',()=>{ if(videojsPlayer) { if(videojsPlayer.isFullscreen()) videojsPlayer.exitFullscreen(); else videojsPlayer.requestFullscreen(); } });
 </script>
 </body>
 </html>
