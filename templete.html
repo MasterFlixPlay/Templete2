@@ -8,10 +8,12 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/video.js@8.17.4/dist/video-js.min.css" />
-<!-- BIBLIOTECA HLS ADICIONADA (RESOLVE O PROBLEMA DO PLAYER NÃO CARREGAR) -->
+
+<!-- BIBLIOTECA HLS.JS OBRIGATÓRIA PARA O PLAYER FUNCIONAR NO CELULAR -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/video.js@8.17.4/dist/video.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <style>
 /* =========================================================
    BASE DO SISTEMA
@@ -94,9 +96,6 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 /* ESTRUTURA DAS VIEWS */
 .view{display:none;padding:15px;padding-bottom:80px;}
 .view.active{display:block;}
-.hero{position:relative;width:100%;aspect-ratio:16/9;border-radius:20px;overflow:hidden;margin-bottom:20px;background:linear-gradient(135deg,#1a0a28,var(--bg-app));}
-.hero .overlay{position:absolute;bottom:20px;left:20px;font-size:1.5rem;font-weight:800;text-shadow:0 2px 10px rgba(0,0,0,0.5);}
-.hero .overlay span{color:var(--primary-color);}
 .ch-logo{width:40px;height:40px;border-radius:10px;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .ch-logo img{max-width:80%;max-height:80%;object-fit:contain;}
 .ch-info{flex:1;}.ch-info .ch-name{font-weight:600;font-size:14px;}
@@ -104,11 +103,20 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 .poster .img-wrap img{width:100%;height:100%;object-fit:cover;}
 .poster .title{padding:10px;font-size:13px;font-weight:600;text-align:center;}
 .poster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;}
-
-/* SCROLL HORIZONTAL PARA A HOME */
 .h-scroll{display:flex;gap:12px;overflow-x:auto;padding-bottom:5px;scroll-snap-type:x mandatory;}
 .h-scroll::-webkit-scrollbar{display:none;}
 .h-scroll .poster{flex:0 0 auto;width:120px;scroll-snap-align:start;}
+
+/* =========================================================
+   SLIDER DE DESTAQUE (BANNER AUTOMÁTICO)
+   ========================================================= */
+#hero-carousel{width:100%;aspect-ratio:16/9;border-radius:20px;overflow:hidden;margin-bottom:15px;position:relative;background:var(--bg-app);}
+.carousel-item{height:100%;width:100%;position:relative;}
+.carousel-item img{width:100%;height:100%;object-fit:cover;}
+.carousel-overlay{position:absolute;bottom:0;left:0;width:100%;padding:30px 20px;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.8));}
+.carousel-overlay h4{font-weight:800;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,0.8);}
+.carousel-control-prev,.carousel-control-next{filter:invert(1);}
+.carousel-indicators [data-bs-target]{background-color:var(--primary-color);}
 </style>
 </head>
 <body>
@@ -145,7 +153,7 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
     <div class="modal-content">
       <div class="modal-body p-0">
         <div style="aspect-ratio:16/9;background:#000;">
-            <video id="videoEl" class="video-js" controls preload="auto" playsinline></video>
+            <video id="videoEl" class="video-js vjs-big-play-centered" controls preload="auto" playsinline></video>
         </div>
       </div>
     </div>
@@ -164,20 +172,25 @@ let SERVER, USER, PASS;
 let videoPlayer = null;
 const favorites = JSON.parse(localStorage.getItem('favs') || '[]');
 const cache = { live: null, vod: null, series: null, userInfo: null };
-let isLoadingHome = false;
+let carouselInterval = null;
+let isLoggedIn = false;
 
-/* NOVO BOTÃO SAIR: volta para a tela de login sem recarregar a página */
+/* =========================================================
+   LOGIN E LOGOUT (CORRIGIDO PARA LIMPAR A TELA AO SAIR)
+   ========================================================= */
 function performLogout() {
     if(confirm('Deseja realmente sair?')) {
-        localStorage.clear(); // Limpa favoritos e dados
+        // Para o carrossel se estiver rodando
+        if(carouselInterval) { clearInterval(carouselInterval); carouselInterval = null; }
+        localStorage.clear(); 
+        isLoggedIn = false;
+        // Reseta a view da home
+        document.getElementById('view-home').innerHTML = '';
         document.getElementById('app').style.display = 'none';
-        document.getElementById('splash-screen').style.display = 'none';
         document.getElementById('loginScreen').style.display = 'flex';
-        // Limpa os campos de login
         document.getElementById('inputServer').value = '';
         document.getElementById('inputUser').value = '';
         document.getElementById('inputPass').value = '';
-        // Limpa o cache para forçar recarregamento na próxima vez
         cache.live = null; cache.vod = null; cache.series = null;
         if(videoPlayer) { videoPlayer.dispose(); videoPlayer = null; }
     }
@@ -211,9 +224,13 @@ const api = {
     streamVod(id) { return SERVER + '/movie/' + USER + '/' + PASS + '/' + id + '.mp4'; }
 };
 
-if(document.getElementById('inputServer').value) doLogin();
+if(document.getElementById('inputServer').value && !isLoggedIn) doLogin();
 
+/* =========================================================
+   CONFIGURAÇÃO INICIAL DO APP
+   ========================================================= */
 function mountApp() {
+    isLoggedIn = true;
     let menuHTML = '';
     if(MENU_STYLE === 'baixo') {
         menuHTML = `<nav class="bottom-nav baixo">
@@ -270,13 +287,20 @@ function mountApp() {
 }
 
 /* =========================================================
-   FUNÇÃO QUE CARREGA OS DADOS E MONTA A TELA INICIAL
+   TELA INICIAL COM SLIDER E CARDS
    ========================================================= */
 async function loadHomeData() {
     const homeDiv = document.getElementById('view-home');
     homeDiv.innerHTML = `
-        <div class="hero">
-            <div class="overlay">Aproveite<br/><span>seu tempo</span></div>
+        <div id="hero-carousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
+            <div class="carousel-indicators" id="carousel-indicators"></div>
+            <div class="carousel-inner" id="carousel-inner"></div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#hero-carousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#hero-carousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            </button>
         </div>
         <div id="homeContent">
             <div style="text-align:center;padding:20px;opacity:0.7;">
@@ -285,79 +309,104 @@ async function loadHomeData() {
         </div>
     `;
 
-    if(!isLoadingHome) {
-        isLoadingHome = true;
-        // Carrega todos os dados em paralelo
-        try {
-            const [liveData, vodData, seriesData] = await Promise.all([
-                !cache.live ? api.call('get_live_streams') : cache.live,
-                !cache.vod ? api.call('get_vod_streams') : cache.vod,
-                !cache.series ? api.call('get_series') : cache.series
-            ]);
+    try {
+        // Carrega os dados
+        const [liveData, vodData, seriesData] = await Promise.all([
+            !cache.live ? api.call('get_live_streams') : cache.live,
+            !cache.vod ? api.call('get_vod_streams') : cache.vod,
+            !cache.series ? api.call('get_series') : cache.series
+        ]);
 
-            if(!cache.live) cache.live = liveData || [];
-            if(!cache.vod) cache.vod = vodData || [];
-            if(!cache.series) cache.series = seriesData || [];
+        if(!cache.live) cache.live = liveData || [];
+        if(!cache.vod) cache.vod = vodData || [];
+        if(!cache.series) cache.series = seriesData || [];
 
-            const hasLive = cache.live && cache.live.length > 0;
-            const hasVod = cache.vod && cache.vod.length > 0;
-            const hasSeries = cache.series && cache.series.length > 0;
+        const hasLive = cache.live && cache.live.length > 0;
+        const hasVod = cache.vod && cache.vod.length > 0;
+        const hasSeries = cache.series && cache.series.length > 0;
 
-            let html = '';
-
-            // CANAIS EM DESTAQUE
-            if(hasLive) {
-                html += `<div class="section-head"><h5 style="font-weight:600;color:var(--primary-color);margin:20px 0 10px;">📡 Canais em destaque</h5></div><div class="h-scroll">`;
-                cache.live.slice(0, 10).forEach(s => {
-                    html += `
-                        <div class="poster" onclick="playLive('${s.stream_id}', '${s.name}')">
-                            <div class="img-wrap" style="aspect-ratio:16/9;">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div>
-                            <div class="title">${s.name}</div>
-                        </div>
-                    `;
-                });
-                html += `</div>`;
-            }
-
-            // FILMES POPULARES
-            if(hasVod) {
-                html += `<div class="section-head"><h5 style="font-weight:600;color:var(--primary-color);margin:20px 0 10px;">🎬 Filmes populares</h5></div><div class="h-scroll">`;
-                cache.vod.slice(0, 10).forEach(s => {
-                    html += `
-                        <div class="poster" onclick="playVod('${s.stream_id}', '${s.name}')">
-                            <div class="img-wrap">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div>
-                            <div class="title">${s.name}</div>
-                        </div>
-                    `;
-                });
-                html += `</div>`;
-            }
-
-            // SÉRIES RECENTES
-            if(hasSeries) {
-                html += `<div class="section-head"><h5 style="font-weight:600;color:var(--primary-color);margin:20px 0 10px;">📺 Séries recentes</h5></div><div class="h-scroll">`;
-                cache.series.slice(0, 10).forEach(s => {
-                    html += `
-                        <div class="poster">
-                            <div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div>
-                            <div class="title">${s.name}</div>
-                        </div>
-                    `;
-                });
-                html += `</div>`;
-            }
-
-            if(!hasLive && !hasVod && !hasSeries) {
-                html += `<p style="text-align:center;padding:40px;opacity:0.6;">Nenhum conteúdo encontrado no servidor.</p>`;
-            }
-
-            document.getElementById('homeContent').innerHTML = html;
-
-        } catch(e) {
-            document.getElementById('homeContent').innerHTML = `<p style="text-align:center;padding:30px;opacity:0.6;color:#ff6b6b;">Erro ao carregar dados. Verifique suas credenciais.</p>`;
-        } finally {
-            isLoadingHome = false;
+        // CRIA O SLIDER COM 5 FILMES E 5 SÉRIES
+        let sliderItems = [];
+        if(hasVod) {
+            cache.vod.slice(0, 5).forEach(s => { sliderItems.push({img: s.stream_icon, title: s.name}); });
         }
+        if(hasSeries) {
+            cache.series.slice(0, 5).forEach(s => { sliderItems.push({img: s.cover, title: s.name}); });
+        }
+
+        const carouselInner = document.getElementById('carousel-inner');
+        const carouselIndicators = document.getElementById('carousel-indicators');
+        
+        if(sliderItems.length > 0) {
+            sliderItems.forEach((item, index) => {
+                const isActive = index === 0 ? 'active' : '';
+                const indicator = document.createElement('button');
+                indicator.type = 'button';
+                indicator.dataset.bsTarget = '#hero-carousel';
+                indicator.dataset.bsSlideTo = index;
+                if(isActive) indicator.classList.add('active');
+                carouselIndicators.appendChild(indicator);
+
+                const slide = document.createElement('div');
+                slide.className = `carousel-item ${isActive}`;
+                slide.innerHTML = `
+                    <img src="${item.img || ''}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSIyMCIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiI+U2VtIEltYWdlbjwvdGV4dD48L3N2Zz4=';">
+                    <div class="carousel-overlay"><h4>${item.title}</h4></div>
+                `;
+                carouselInner.appendChild(slide);
+            });
+        } else {
+            document.getElementById('hero-carousel').innerHTML = `<div class="hero"><div class="overlay">Aproveite<br/><span>seu tempo</span></div></div>`;
+        }
+
+        // MONTA OS CARDS DA HOME
+        let html = '';
+        if(hasLive) {
+            html += `<div class="section-head"><h5 style="font-weight:600;color:var(--primary-color);margin:20px 0 10px;">📡 Canais em destaque</h5></div><div class="h-scroll">`;
+            cache.live.slice(0, 10).forEach(s => {
+                html += `
+                    <div class="poster" onclick="playLive('${s.stream_id}', '${s.name}')">
+                        <div class="img-wrap" style="aspect-ratio:16/9;">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div>
+                        <div class="title">${s.name}</div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+
+        if(hasVod) {
+            html += `<div class="section-head"><h5 style="font-weight:600;color:var(--primary-color);margin:20px 0 10px;">🎬 Filmes populares</h5></div><div class="h-scroll">`;
+            cache.vod.slice(0, 10).forEach(s => {
+                html += `
+                    <div class="poster" onclick="playVod('${s.stream_id}', '${s.name}')">
+                        <div class="img-wrap">${s.stream_icon ? `<img src="${s.stream_icon}" />` : ''}</div>
+                        <div class="title">${s.name}</div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+
+        if(hasSeries) {
+            html += `<div class="section-head"><h5 style="font-weight:600;color:var(--primary-color);margin:20px 0 10px;">📺 Séries recentes</h5></div><div class="h-scroll">`;
+            cache.series.slice(0, 10).forEach(s => {
+                html += `
+                    <div class="poster">
+                        <div class="img-wrap">${s.cover ? `<img src="${s.cover}" />` : ''}</div>
+                        <div class="title">${s.name}</div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+
+        if(!hasLive && !hasVod && !hasSeries) {
+            html += `<p style="text-align:center;padding:40px;opacity:0.6;">Nenhum conteúdo encontrado.</p>`;
+        }
+        document.getElementById('homeContent').innerHTML = html;
+
+    } catch(e) {
+        document.getElementById('homeContent').innerHTML = `<p style="text-align:center;padding:30px;opacity:0.6;">Erro ao carregar dados.</p>`;
     }
 }
 
@@ -367,20 +416,14 @@ async function loadHomeData() {
 async function renderLive() {
     const el = document.getElementById('view-live');
     if(cache.live) return renderLiveList(el);
-    
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando canais...</p>';
     try {
         cache.live = await api.call('get_live_streams') || [];
         renderLiveList(el);
-    } catch(e) {
-        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Erro ao carregar canais.</p>';
-    }
+    } catch(e) { el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Erro.</p>'; }
 }
 function renderLiveList(el) {
-    if(!cache.live || !cache.live.length) {
-        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum canal.</p>';
-        return;
-    }
+    if(!cache.live || !cache.live.length) { el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum canal.</p>'; return; }
     let html = '';
     cache.live.slice(0, 50).forEach(s => {
         const fav = favorites.find(f => f.id === s.stream_id && f.type === 'live');
@@ -403,20 +446,14 @@ function renderLiveList(el) {
 async function renderVod() {
     const el = document.getElementById('view-vod');
     if(cache.vod) return renderVodList(el);
-
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando filmes...</p>';
     try {
         cache.vod = await api.call('get_vod_streams') || [];
         renderVodList(el);
-    } catch(e) {
-        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Erro ao carregar filmes.</p>';
-    }
+    } catch(e) { el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Erro.</p>'; }
 }
 function renderVodList(el) {
-    if(!cache.vod || !cache.vod.length) {
-        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum filme.</p>';
-        return;
-    }
+    if(!cache.vod || !cache.vod.length) { el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum filme.</p>'; return; }
     let html = '<div class="poster-grid">';
     cache.vod.slice(0, 30).forEach(s => {
         html += `
@@ -433,20 +470,14 @@ function renderVodList(el) {
 async function renderSeries() {
     const el = document.getElementById('view-series');
     if(cache.series) return renderSeriesList(el);
-
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando séries...</p>';
     try {
         cache.series = await api.call('get_series') || [];
         renderSeriesList(el);
-    } catch(e) {
-        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Erro ao carregar séries.</p>';
-    }
+    } catch(e) { el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Erro.</p>'; }
 }
 function renderSeriesList(el) {
-    if(!cache.series || !cache.series.length) {
-        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhuma série.</p>';
-        return;
-    }
+    if(!cache.series || !cache.series.length) { el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhuma série.</p>'; return; }
     let html = '<div class="poster-grid">';
     cache.series.slice(0, 30).forEach(s => {
         html += `
@@ -462,10 +493,7 @@ function renderSeriesList(el) {
 
 function renderFavorites() {
     const el = document.getElementById('view-favorites');
-    if(!favorites.length) {
-        el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum favorito adicionado.</p>';
-        return;
-    }
+    if(!favorites.length) { el.innerHTML = '<p style="padding:30px;text-align:center;opacity:0.6;">Nenhum favorito.</p>'; return; }
     let html = '<div class="poster-grid">';
     favorites.forEach(s => {
         html += `
@@ -479,21 +507,16 @@ function renderFavorites() {
     el.innerHTML = html;
 }
 
-/* =========================================================
-   TELA INFO
-   ========================================================= */
 async function renderInfo() {
     if(!cache.userInfo) {
         try { cache.userInfo = await api.call(); } catch(e) { cache.userInfo = { user_info: { username: USER, exp_date: 0 } }; }
     }
     const info = cache.userInfo.user_info || { username: USER, exp_date: 0 };
-    
     let expDate = '--/--/----';
     if(info.exp_date && info.exp_date > 0) {
         const dateObj = new Date(info.exp_date * 1000);
         expDate = dateObj.toLocaleDateString('pt-BR');
     }
-
     document.getElementById('view-info').innerHTML = `
         <h3 style="color:var(--primary-color);margin-bottom:15px;">Minha Conta</h3>
         <div style="background:var(--glass);padding:15px;border-radius:14px;border:1px solid var(--glass-border);margin-bottom:20px;">
@@ -501,7 +524,6 @@ async function renderInfo() {
             <p><strong>Expiração:</strong> ${expDate}</p>
             <p><strong>Servidor:</strong> ${SERVER}</p>
         </div>
-        <!-- BOTÃO SAIR CORRIGIDO -->
         <button onclick="performLogout()" style="width:100%;padding:14px;background:#dc3545;border:none;border-radius:12px;color:#fff;font-weight:bold;font-size:1rem;cursor:pointer;">
             <i class="bi bi-box-arrow-right me-2"></i>Sair da Conta
         </button>
@@ -509,7 +531,7 @@ async function renderInfo() {
 }
 
 /* =========================================================
-   FAVORITOS E PLAYER
+   FAVORITOS E PLAYER (COM HLS.JS)
    ========================================================= */
 function toggleFav(type, id, name, cover) {
     const idx = favorites.findIndex(f => f.id === id && f.type === type);
@@ -534,8 +556,9 @@ function play(url, title) {
     if(videoPlayer) { videoPlayer.dispose(); videoPlayer = null; }
     new bootstrap.Modal('#playerModal').show();
     setTimeout(() => {
-        videoPlayer = videojs('videoEl', { controls: true, autoplay: true, fluid: true });
+        videoPlayer = videojs('videoEl', { controls: true, autoplay: true, fluid: true, html5: { hls: { overrideNative: true } } });
         videoPlayer.src({ src: url, type: 'application/x-mpegURL' });
+        videoPlayer.play();
     }, 300);
 }
 </script>
