@@ -12,7 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <style>
 /* =========================================================
-   BASE DO SISTEMA (Nunca muda)
+   BASE DO SISTEMA
    ========================================================= */
 :root {
   --primary-color: {{primary_color}};
@@ -45,7 +45,7 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 #app{display:none;}
 
 /* =========================================================
-   ESTILOS DE MENU (O Gerador apaga o que não for usado)
+   ESTILOS DE MENU
    ========================================================= */
 {{MENU_STYLES}}
 {{MENU_START_1}}
@@ -70,7 +70,7 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 {{MENU_END_3}}
 
 /* =========================================================
-   ESTILOS DE CARD E PLAYER (O Gerador apaga o que não for usado)
+   ESTILOS DE CARD E PLAYER
    ========================================================= */
 {{CARD_STYLES}}
 {{CARD_START_1}}
@@ -90,7 +90,7 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 {{CARD_END_2}}
 
 /* ESTRUTURA DAS VIEWS */
-.view{display:none;padding:15px;}
+.view{display:none;padding:15px;padding-bottom:80px;}
 .view.active{display:block;}
 .hero{position:relative;width:100%;aspect-ratio:16/9;border-radius:20px;overflow:hidden;margin-bottom:20px;background:linear-gradient(135deg,#1a0a28,var(--bg-app));}
 .hero .overlay{position:absolute;bottom:20px;left:20px;font-size:1.5rem;font-weight:800;}
@@ -150,7 +150,6 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 const $=(s)=>document.querySelector(s);
 const $$=(s)=>[...document.querySelectorAll(s)];
 
-// INJEÇÃO DAS ESCOLHAS DO GERADOR
 const MENU_STYLE = "{{menu_choice}}";
 const CARD_STYLE = "{{card_choice}}";
 const PLAYER_STYLE = "{{player_choice}}";
@@ -191,7 +190,6 @@ const api = {
 if(document.getElementById('inputServer').value) doLogin();
 
 function mountApp() {
-    // Define o Menu Escolhido
     let menuHTML = '';
     if(MENU_STYLE === 'baixo') {
         menuHTML = `<nav class="bottom-nav baixo">
@@ -225,7 +223,6 @@ function mountApp() {
     }
     document.getElementById('menu-container').innerHTML = menuHTML;
 
-    // Aplica Estilo de Cards e Player
     document.body.classList.add(CARD_STYLE === 'fluido' ? 'card-fluido' : 'card-padrao');
     document.getElementById('videoEl').classList.add(PLAYER_STYLE === 'fluido' ? 'vjs-fluido' : 'vjs-padrao');
 
@@ -246,22 +243,43 @@ function mountApp() {
     });
 }
 
+/* =========================================================
+   TELA INICIAL (REFORMULADA E COM MAIS ESTILO)
+   ========================================================= */
 function renderHome() {
     $('#view-home').innerHTML = `
         <div class="hero">
             <div class="overlay">Aproveite<br/><span>seu tempo</span></div>
         </div>
+        
+        <h5 style="font-weight:600;color:var(--primary-color);margin-bottom:15px;">Descubra</h5>
+        
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div style="background:var(--glass);padding:20px;border-radius:14px;text-align:center;cursor:pointer;transition:0.2s;border:1px solid var(--glass-border);" onclick="navigateTo('live')">
-                <i class="bi bi-broadcast" style="font-size:2rem;color:var(--primary-color);"></i><br><span style="font-weight:600;">Canais</span>
+            <div style="background:var(--glass);padding:25px 10px;border-radius:18px;text-align:center;cursor:pointer;transition:0.2s;border:1px solid var(--glass-border);" onclick="navigateTo('live')" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='var(--glass-border)'">
+                <div style="background:rgba(255,255,255,0.05);width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">
+                    <i class="bi bi-broadcast" style="font-size:1.8rem;color:var(--primary-color);"></i>
+                </div>
+                <span style="font-weight:600;">Canais</span>
             </div>
-            <div style="background:var(--glass);padding:20px;border-radius:14px;text-align:center;cursor:pointer;transition:0.2s;border:1px solid var(--glass-border);" onclick="navigateTo('vod')">
-                <i class="bi bi-film" style="font-size:2rem;color:var(--primary-color);"></i><br><span style="font-weight:600;">Filmes</span>
+            
+            <div style="background:var(--glass);padding:25px 10px;border-radius:18px;text-align:center;cursor:pointer;transition:0.2s;border:1px solid var(--glass-border);" onclick="navigateTo('vod')" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='var(--glass-border)'">
+                <div style="background:rgba(255,255,255,0.05);width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">
+                    <i class="bi bi-film" style="font-size:1.8rem;color:var(--primary-color);"></i>
+                </div>
+                <span style="font-weight:600;">Filmes</span>
             </div>
+        </div>
+        
+        <div style="margin-top:20px;background:var(--glass);border-radius:14px;padding:15px;border:1px solid var(--glass-border);">
+            <h6 style="font-weight:600;color:var(--primary-color);">Bem-vindo de volta!</h6>
+            <p style="font-size:13px;opacity:0.7;margin-bottom:0;">Navegue pelo menu inferior para acessar todo o conteúdo.</p>
         </div>
     `;
 }
 
+/* =========================================================
+   DEMAIS ABAS
+   ========================================================= */
 async function renderLive() {
     const el = document.getElementById('view-live');
     el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando canais...</p>';
@@ -350,23 +368,38 @@ function renderFavorites() {
     el.innerHTML = html;
 }
 
-function renderInfo() {
+/* =========================================================
+   TELA INFO (COM DATA CORRIGIDA E BOTÃO SAIR)
+   ========================================================= */
+async function renderInfo() {
     if(!cache.userInfo) {
-        try { cache.userInfo = api.call(); } catch(e) {}
+        try { cache.userInfo = await api.call(); } catch(e) { cache.userInfo = { user_info: { username: USER, exp_date: 0 } }; }
     }
-    const info = cache.userInfo?.user_info || { username: USER, exp_date: 0 };
-    const expDate = info.exp_date ? new Date(info.exp_date * 1000).toLocaleDateString() : '--/--/----';
+    const info = cache.userInfo.user_info || { username: USER, exp_date: 0 };
+    
+    // CORREÇÃO DA DATA DE VALIDADE
+    let expDate = '--/--/----';
+    if(info.exp_date && info.exp_date > 0) {
+        const dateObj = new Date(info.exp_date * 1000);
+        expDate = dateObj.toLocaleDateString('pt-BR');
+    }
+
     document.getElementById('view-info').innerHTML = `
-        <h3 style="color:var(--primary-color);margin-bottom:15px;">Informações da Conta</h3>
-        <div style="background:var(--glass);padding:15px;border-radius:14px;border:1px solid var(--glass-border);">
+        <h3 style="color:var(--primary-color);margin-bottom:15px;">Minha Conta</h3>
+        <div style="background:var(--glass);padding:15px;border-radius:14px;border:1px solid var(--glass-border);margin-bottom:20px;">
             <p><strong>Usuário:</strong> ${info.username || USER}</p>
             <p><strong>Expiração:</strong> ${expDate}</p>
             <p><strong>Servidor:</strong> ${SERVER}</p>
         </div>
+        <button onclick="if(confirm('Deseja realmente sair?')){ localStorage.clear(); location.reload(); }" style="width:100%;padding:14px;background:#dc3545;border:none;border-radius:12px;color:#fff;font-weight:bold;font-size:1rem;cursor:pointer;">
+            <i class="bi bi-box-arrow-right me-2"></i>Sair da Conta
+        </button>
     `;
 }
 
-// Lógica de Favoritos
+/* =========================================================
+   FAVORITOS E PLAYER
+   ========================================================= */
 function toggleFav(type, id, name, cover) {
     const idx = favorites.findIndex(f => f.id === id && f.type === type);
     if(idx > -1) { favorites.splice(idx, 1); } 
@@ -375,7 +408,6 @@ function toggleFav(type, id, name, cover) {
     if(document.getElementById('view-live').classList.contains('active')) renderLive();
 }
 
-// Navegação e Player
 window.playLive = (id, name) => play(api.streamLive(id), name);
 window.playVod = (id, name) => play(api.streamVod(id), name);
 window.playFav = (id, name, type) => {
