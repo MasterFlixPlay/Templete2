@@ -11,7 +11,6 @@
 
 <!-- BIBLIOTECA HLS.JS OBRIGATÓRIA PARA O PLAYER FUNCIONAR NO CELULAR -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/video.js@8.17.4/dist/video.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <style>
@@ -82,7 +81,6 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 .card-padrao .ch-row:hover{border-color:var(--primary-color);}
 .card-padrao .poster{background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;overflow:hidden;transition:0.2s;}
 .card-padrao .poster:hover{border-color:var(--primary-color);}
-.vjs-padrao .vjs-big-play-button{background:var(--primary-color);border-radius:50%;width:65px;height:65px;line-height:65px;margin-left:-32px;margin-top:-32px;}
 {{CARD_END_1}}
 
 {{CARD_START_2}}
@@ -90,12 +88,24 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 .card-fluido .ch-row:hover{transform:translateY(-2px);}
 .card-fluido .poster{border-radius:20px;overflow:hidden;border:1px solid var(--glass-border);transition:0.2s;}
 .card-fluido .poster:hover{transform:scale(1.02);}
-.vjs-fluido .vjs-big-play-button{background:var(--primary-color);border-radius:16px;width:75px;height:55px;line-height:55px;margin-left:-37px;margin-top:-27px;}
 {{CARD_END_2}}
 
-/* ESTRUTURA DAS VIEWS */
+/* =========================================================
+   ESTRUTURA DAS VIEWS E COMPONENTES
+   ========================================================= */
 .view{display:none;padding:15px;padding-bottom:80px;}
 .view.active{display:block;}
+
+/* Slider e banners */
+#hero-carousel{width:100%;aspect-ratio:16/9;border-radius:20px;overflow:hidden;margin-bottom:15px;position:relative;background:var(--bg-app);}
+.carousel-item{height:100%;width:100%;position:relative;}
+.carousel-item img{width:100%;height:100%;object-fit:cover;}
+.carousel-overlay{position:absolute;bottom:0;left:0;width:100%;padding:20px;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.8));}
+.carousel-overlay h5{font-weight:800;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,0.8);}
+.carousel-control-prev,.carousel-control-next{filter:invert(1);}
+.carousel-indicators [data-bs-target]{background-color:var(--primary-color);}
+
+/* Cards e Listas */
 .ch-logo{width:40px;height:40px;border-radius:10px;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .ch-logo img{max-width:80%;max-height:80%;object-fit:contain;}
 .ch-info{flex:1;}.ch-info .ch-name{font-weight:600;font-size:14px;}
@@ -107,16 +117,12 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
 .h-scroll::-webkit-scrollbar{display:none;}
 .h-scroll .poster{flex:0 0 auto;width:120px;scroll-snap-align:start;}
 
-/* =========================================================
-   SLIDER DE DESTAQUE (BANNER AUTOMÁTICO)
-   ========================================================= */
-#hero-carousel{width:100%;aspect-ratio:16/9;border-radius:20px;overflow:hidden;margin-bottom:15px;position:relative;background:var(--bg-app);}
-.carousel-item{height:100%;width:100%;position:relative;}
-.carousel-item img{width:100%;height:100%;object-fit:cover;}
-.carousel-overlay{position:absolute;bottom:0;left:0;width:100%;padding:30px 20px;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.8));}
-.carousel-overlay h4{font-weight:800;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,0.8);}
-.carousel-control-prev,.carousel-control-next{filter:invert(1);}
-.carousel-indicators [data-bs-target]{background-color:var(--primary-color);}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin:15px 0 10px;}
+.section-head h5{font-weight:600;color:var(--primary-color);margin:0;}
+
+/* Categorias */
+.cat-chip{display:inline-block;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;padding:6px 14px;font-size:13px;font-weight:600;margin-right:8px;margin-bottom:8px;cursor:pointer;transition:0.2s;}
+.cat-chip:hover{background:var(--primary-color);color:#fff;border-color:var(--primary-color);}
 </style>
 </head>
 <body>
@@ -148,12 +154,13 @@ body{background:var(--bg-app);color:#f5f5f5;min-height:100vh;overflow-x:hidden;}
     <div id="view-info" class="view"></div>
 </div>
 
+<!-- PLAYER MODAL (LIMPO E LEVE) -->
 <div class="modal fade" id="playerModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-xl">
-    <div class="modal-content">
-      <div class="modal-body p-0">
+    <div class="modal-content" style="background:#000;border:none;">
+      <div class="modal-body p-0" style="background:#000;">
         <div style="aspect-ratio:16/9;background:#000;">
-            <video id="videoEl" class="video-js vjs-big-play-centered" controls preload="auto" playsinline></video>
+            <video id="videoEl" controls playsinline style="width:100%;height:100%;"></video>
         </div>
       </div>
     </div>
@@ -166,33 +173,29 @@ const $$=(s)=>[...document.querySelectorAll(s)];
 
 const MENU_STYLE = "{{menu_choice}}";
 const CARD_STYLE = "{{card_choice}}";
-const PLAYER_STYLE = "{{player_choice}}";
 
 let SERVER, USER, PASS;
-let videoPlayer = null;
+let currentHls = null;
 const favorites = JSON.parse(localStorage.getItem('favs') || '[]');
-const cache = { live: null, vod: null, series: null, userInfo: null };
-let carouselInterval = null;
-let isLoggedIn = false;
+const cache = { live: null, vod: null, series: null, userInfo: null, cats: { live: null, vod: null, series: null } };
 
 /* =========================================================
-   LOGIN E LOGOUT (CORRIGIDO PARA LIMPAR A TELA AO SAIR)
+   LOGIN E LOGOUT (CORRIGIDO)
    ========================================================= */
 function performLogout() {
     if(confirm('Deseja realmente sair?')) {
-        // Para o carrossel se estiver rodando
-        if(carouselInterval) { clearInterval(carouselInterval); carouselInterval = null; }
+        if(currentHls) { currentHls.destroy(); currentHls = null; }
         localStorage.clear(); 
-        isLoggedIn = false;
-        // Reseta a view da home
         document.getElementById('view-home').innerHTML = '';
         document.getElementById('app').style.display = 'none';
+        document.getElementById('splash-screen').style.display = 'none';
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('inputServer').value = '';
         document.getElementById('inputUser').value = '';
         document.getElementById('inputPass').value = '';
+        // Limpa o cache para forçar recarregamento
         cache.live = null; cache.vod = null; cache.series = null;
-        if(videoPlayer) { videoPlayer.dispose(); videoPlayer = null; }
+        cache.cats.live = null; cache.cats.vod = null; cache.cats.series = null;
     }
 }
 
@@ -203,7 +206,7 @@ function doLogin() {
 
     if(!SERVER || !USER || !PASS) { alert("Preencha todos os dados!"); return; }
     document.getElementById('loginScreen').style.display = 'none';
-    
+    document.getElementById('splash-screen').style.display = 'flex';
     setTimeout(() => {
         document.getElementById('splash-screen').classList.add('hide');
         document.getElementById('app').style.display = 'block';
@@ -211,26 +214,25 @@ function doLogin() {
             document.getElementById('splash-screen').style.display = 'none';
             mountApp();
         }, 500);
-    }, 1500);
+    }, 1000);
 }
 
 const api = {
     base() { return SERVER + '/player_api.php?username=' + USER + '&password=' + PASS; },
-    async call(action='') {
-        const r = await fetch(api.base() + (action ? '&action='+action : ''));
+    async call(action='', extra='') {
+        const r = await fetch(api.base() + (action ? '&action='+action : '') + (extra || ''));
         return r.json();
     },
     streamLive(id) { return SERVER + '/live/' + USER + '/' + PASS + '/' + id + '.m3u8'; },
     streamVod(id) { return SERVER + '/movie/' + USER + '/' + PASS + '/' + id + '.mp4'; }
 };
 
-if(document.getElementById('inputServer').value && !isLoggedIn) doLogin();
+if(document.getElementById('inputServer').value) doLogin();
 
 /* =========================================================
    CONFIGURAÇÃO INICIAL DO APP
    ========================================================= */
 function mountApp() {
-    isLoggedIn = true;
     let menuHTML = '';
     if(MENU_STYLE === 'baixo') {
         menuHTML = `<nav class="bottom-nav baixo">
@@ -265,9 +267,8 @@ function mountApp() {
     document.getElementById('menu-container').innerHTML = menuHTML;
 
     document.body.classList.add(CARD_STYLE === 'fluido' ? 'card-fluido' : 'card-padrao');
-    document.getElementById('videoEl').classList.add(PLAYER_STYLE === 'fluido' ? 'vjs-fluido' : 'vjs-padrao');
 
-    // Carrega os dados assim que o app inicia
+    // Carrega os dados
     loadHomeData();
     
     $$('.nav-item').forEach(b => {
@@ -287,19 +288,21 @@ function mountApp() {
 }
 
 /* =========================================================
-   TELA INICIAL COM SLIDER E CARDS
+   TELA INICIAL (COM SLIDER + CATEGORIAS)
    ========================================================= */
 async function loadHomeData() {
     const homeDiv = document.getElementById('view-home');
+    
+    // Layout básico da Home
     homeDiv.innerHTML = `
-        <div id="hero-carousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
+        <div id="hero-carousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3500">
             <div class="carousel-indicators" id="carousel-indicators"></div>
             <div class="carousel-inner" id="carousel-inner"></div>
             <button class="carousel-control-prev" type="button" data-bs-target="#hero-carousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="carousel-control-prev-icon"></span>
             </button>
             <button class="carousel-control-next" type="button" data-bs-target="#hero-carousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="carousel-control-next-icon"></span>
             </button>
         </div>
         <div id="homeContent">
@@ -310,29 +313,31 @@ async function loadHomeData() {
     `;
 
     try {
-        // Carrega os dados
-        const [liveData, vodData, seriesData] = await Promise.all([
-            !cache.live ? api.call('get_live_streams') : cache.live,
-            !cache.vod ? api.call('get_vod_streams') : cache.vod,
-            !cache.series ? api.call('get_series') : cache.series
+        // Carrega tudo em paralelo: Categorias e Listas
+        const [liveCats, vodCats, seriesCats, liveData, vodData, seriesData] = await Promise.all([
+            api.call('get_live_categories'),
+            api.call('get_vod_categories'),
+            api.call('get_series_categories'),
+            api.call('get_live_streams'),
+            api.call('get_vod_streams'),
+            api.call('get_series')
         ]);
 
-        if(!cache.live) cache.live = liveData || [];
-        if(!cache.vod) cache.vod = vodData || [];
-        if(!cache.series) cache.series = seriesData || [];
+        cache.cats.live = liveCats || [];
+        cache.cats.vod = vodCats || [];
+        cache.cats.series = seriesCats || [];
+        cache.live = liveData || [];
+        cache.vod = vodData || [];
+        cache.series = seriesData || [];
 
-        const hasLive = cache.live && cache.live.length > 0;
-        const hasVod = cache.vod && cache.vod.length > 0;
-        const hasSeries = cache.series && cache.series.length > 0;
+        const hasLive = cache.live.length > 0;
+        const hasVod = cache.vod.length > 0;
+        const hasSeries = cache.series.length > 0;
 
-        // CRIA O SLIDER COM 5 FILMES E 5 SÉRIES
+        // Slider (Filmes e Séries)
         let sliderItems = [];
-        if(hasVod) {
-            cache.vod.slice(0, 5).forEach(s => { sliderItems.push({img: s.stream_icon, title: s.name}); });
-        }
-        if(hasSeries) {
-            cache.series.slice(0, 5).forEach(s => { sliderItems.push({img: s.cover, title: s.name}); });
-        }
+        cache.vod.slice(0, 5).forEach(s => sliderItems.push({img: s.stream_icon, title: s.name}));
+        cache.series.slice(0, 5).forEach(s => sliderItems.push({img: s.cover, title: s.name}));
 
         const carouselInner = document.getElementById('carousel-inner');
         const carouselIndicators = document.getElementById('carousel-indicators');
@@ -351,18 +356,47 @@ async function loadHomeData() {
                 slide.className = `carousel-item ${isActive}`;
                 slide.innerHTML = `
                     <img src="${item.img || ''}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSIyMCIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiI+U2VtIEltYWdlbjwvdGV4dD48L3N2Zz4=';">
-                    <div class="carousel-overlay"><h4>${item.title}</h4></div>
+                    <div class="carousel-overlay"><h5>${item.title}</h5></div>
                 `;
                 carouselInner.appendChild(slide);
             });
         } else {
-            document.getElementById('hero-carousel').innerHTML = `<div class="hero"><div class="overlay">Aproveite<br/><span>seu tempo</span></div></div>`;
+            document.getElementById('hero-carousel').innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#1a1a2e;border-radius:20px;"><h4 style="opacity:0.5;">Nenhum destaque</h4></div>`;
         }
 
-        // MONTA OS CARDS DA HOME
+        // Conteúdo da Home: Categorias + Listas
         let html = '';
+
+        // Categorias de Canais
+        if(hasLive && cache.cats.live.length > 0) {
+            html += `<div class="section-head"><h5>📡 Categorias de Canais</h5></div><div>`;
+            cache.cats.live.slice(0, 8).forEach(c => {
+                html += `<span class="cat-chip" onclick="navigateTo('live')">${c.category_name}</span>`;
+            });
+            html += `</div>`;
+        }
+
+        // Categorias de Filmes
+        if(hasVod && cache.cats.vod.length > 0) {
+            html += `<div class="section-head" style="margin-top:10px;"><h5>🎬 Categorias de Filmes</h5></div><div>`;
+            cache.cats.vod.slice(0, 8).forEach(c => {
+                html += `<span class="cat-chip" onclick="navigateTo('vod')">${c.category_name}</span>`;
+            });
+            html += `</div>`;
+        }
+
+        // Categorias de Séries
+        if(hasSeries && cache.cats.series.length > 0) {
+            html += `<div class="section-head" style="margin-top:10px;"><h5>📺 Categorias de Séries</h5></div><div>`;
+            cache.cats.series.slice(0, 8).forEach(c => {
+                html += `<span class="cat-chip" onclick="navigateTo('series')">${c.category_name}</span>`;
+            });
+            html += `</div>`;
+        }
+
+        // Destaques Finais
         if(hasLive) {
-            html += `<div class="section-head"><h5 style="font-weight:600;color:var(--primary-color);margin:20px 0 10px;">📡 Canais em destaque</h5></div><div class="h-scroll">`;
+            html += `<div class="section-head"><h5>Canais em destaque</h5></div><div class="h-scroll">`;
             cache.live.slice(0, 10).forEach(s => {
                 html += `
                     <div class="poster" onclick="playLive('${s.stream_id}', '${s.name}')">
@@ -375,7 +409,7 @@ async function loadHomeData() {
         }
 
         if(hasVod) {
-            html += `<div class="section-head"><h5 style="font-weight:600;color:var(--primary-color);margin:20px 0 10px;">🎬 Filmes populares</h5></div><div class="h-scroll">`;
+            html += `<div class="section-head"><h5>Filmes populares</h5></div><div class="h-scroll">`;
             cache.vod.slice(0, 10).forEach(s => {
                 html += `
                     <div class="poster" onclick="playVod('${s.stream_id}', '${s.name}')">
@@ -388,7 +422,7 @@ async function loadHomeData() {
         }
 
         if(hasSeries) {
-            html += `<div class="section-head"><h5 style="font-weight:600;color:var(--primary-color);margin:20px 0 10px;">📺 Séries recentes</h5></div><div class="h-scroll">`;
+            html += `<div class="section-head"><h5>Séries recentes</h5></div><div class="h-scroll">`;
             cache.series.slice(0, 10).forEach(s => {
                 html += `
                     <div class="poster">
@@ -406,7 +440,7 @@ async function loadHomeData() {
         document.getElementById('homeContent').innerHTML = html;
 
     } catch(e) {
-        document.getElementById('homeContent').innerHTML = `<p style="text-align:center;padding:30px;opacity:0.6;">Erro ao carregar dados.</p>`;
+        document.getElementById('homeContent').innerHTML = `<p style="text-align:center;padding:30px;opacity:0.6;color:#ff6b6b;">Erro ao carregar dados.</p>`;
     }
 }
 
@@ -416,7 +450,7 @@ async function loadHomeData() {
 async function renderLive() {
     const el = document.getElementById('view-live');
     if(cache.live) return renderLiveList(el);
-    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando canais...</p>';
+    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
     try {
         cache.live = await api.call('get_live_streams') || [];
         renderLiveList(el);
@@ -446,7 +480,7 @@ function renderLiveList(el) {
 async function renderVod() {
     const el = document.getElementById('view-vod');
     if(cache.vod) return renderVodList(el);
-    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando filmes...</p>';
+    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
     try {
         cache.vod = await api.call('get_vod_streams') || [];
         renderVodList(el);
@@ -470,7 +504,7 @@ function renderVodList(el) {
 async function renderSeries() {
     const el = document.getElementById('view-series');
     if(cache.series) return renderSeriesList(el);
-    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando séries...</p>';
+    el.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
     try {
         cache.series = await api.call('get_series') || [];
         renderSeriesList(el);
@@ -531,7 +565,7 @@ async function renderInfo() {
 }
 
 /* =========================================================
-   FAVORITOS E PLAYER (COM HLS.JS)
+   FAVORITOS E PLAYER (COM HLS.JS CORRIGIDO)
    ========================================================= */
 function toggleFav(type, id, name, cover) {
     const idx = favorites.findIndex(f => f.id === id && f.type === type);
@@ -553,12 +587,28 @@ window.navigateTo = (target) => {
 };
 
 function play(url, title) {
-    if(videoPlayer) { videoPlayer.dispose(); videoPlayer = null; }
+    const video = document.getElementById('videoEl');
+    if(currentHls) { currentHls.destroy(); currentHls = null; }
+    video.src = '';
+    
     new bootstrap.Modal('#playerModal').show();
+    
     setTimeout(() => {
-        videoPlayer = videojs('videoEl', { controls: true, autoplay: true, fluid: true, html5: { hls: { overrideNative: true } } });
-        videoPlayer.src({ src: url, type: 'application/x-mpegURL' });
-        videoPlayer.play();
+        if (Hls.isSupported()) {
+            currentHls = new Hls();
+            currentHls.loadSource(url);
+            currentHls.attachMedia(video);
+            currentHls.on(Hls.Events.MANIFEST_PARSED, function() {
+                video.play();
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = url;
+            video.addEventListener('loadedmetadata', function() {
+                video.play();
+            });
+        } else {
+            alert('Seu navegador não suporta streaming.');
+        }
     }, 300);
 }
 </script>
